@@ -25,7 +25,7 @@ export default function ControlPanel({
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-6 h-full overflow-y-auto">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">ZenShield Control</h2>
+      <h2 className="text-2xl font-bold text-gray-900 mb-6">MindShield Control</h2>
 
       {/* Status */}
       <div className="mb-6">

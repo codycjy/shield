@@ -89,14 +89,12 @@ export default function FloatingBall({
     High: 'text-red-600 bg-red-100',
   };
 
-  // Determine ball color based on state
-  const getBallColor = () => {
-    if (isAnalyzing) return 'bg-yellow-500';
-    if (isActive) {
-      if (stats.threatLevel === 'High') return 'bg-red-500';
-      return 'bg-green-500';
-    }
-    return 'bg-gray-400';
+  // Determine orb state for CSS
+  const getOrbState = () => {
+    if (isAnalyzing) return 'yellow';
+    if (isActive && stats.threatLevel === 'High') return 'red';
+    if (isActive) return 'green';
+    return 'off'; // off = green but slower/dimmer
   };
 
   return (
@@ -110,52 +108,63 @@ export default function FloatingBall({
       }}
       onMouseDown={handleMouseDown}
     >
-      {/* Floating Ball */}
-      <div
-        className={`w-14 h-14 rounded-full ${getBallColor()} shadow-lg flex items-center justify-center transition-all duration-300 hover:scale-110 ${
-          isAnalyzing ? 'animate-pulse' : ''
-        }`}
-      >
-        <svg
-          className="w-8 h-8 text-white"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-          />
-        </svg>
+      {/* === Energy Orb === */}
+      <div className="shield-orb" data-state={getOrbState()}>
+        {/* Ambient glow halo */}
+        <div className="shield-orb-glow" />
 
-        {/* Badge for intercepted count */}
-        {isActive && stats.intercepted > 0 && (
-          <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
-            {stats.intercepted > 99 ? '99+' : stats.intercepted}
-          </div>
-        )}
+        {/* Ripple rings */}
+        <div className="shield-orb-ripple" />
+        <div className="shield-orb-ripple shield-orb-ripple-delay" />
+
+        {/* Rotating conic-gradient trail */}
+        <div className="shield-orb-trail" />
+
+        {/* Core ball */}
+        <div className="shield-orb-core">
+          <svg
+            className="w-8 h-8 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+            />
+          </svg>
+
+          {/* Badge for intercepted count */}
+          {isActive && stats.intercepted > 0 && (
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white text-xs font-bold"
+              style={{ boxShadow: '0 0 10px rgba(239,68,68,0.6), 0 0 20px rgba(239,68,68,0.3)' }}
+            >
+              {stats.intercepted > 99 ? '99+' : stats.intercepted}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Expanded Panel */}
       {isExpanded && (
         <div
-          className="panel-content absolute bottom-16 right-0 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden"
+          className="panel-content absolute bottom-[72px] right-0 w-72 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/80 overflow-hidden"
           style={{ cursor: 'default' }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-green-700 px-4 py-3 flex items-center justify-between">
+          <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
-              <span className="text-white font-semibold">ZenShield</span>
+              <span className="text-white font-semibold">MindShield</span>
             </div>
             <button
               onClick={() => setIsExpanded(false)}
-              className="text-white/80 hover:text-white"
+              className="text-white/80 hover:text-white transition-colors"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -169,15 +178,16 @@ export default function FloatingBall({
             <div className="flex items-center gap-2 mb-4">
               <div
                 className={`w-3 h-3 rounded-full ${
-                  isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-400'
+                  isActive ? 'bg-green-500 animate-pulse' : 'bg-green-400'
                 }`}
+                style={isActive ? { boxShadow: '0 0 8px rgba(34,197,94,0.6)' } : { boxShadow: '0 0 6px rgba(34,197,94,0.3)' }}
               />
               <span className="text-sm font-medium text-gray-700">
                 {isAnalyzing
                   ? 'Analyzing...'
                   : isActive
                   ? 'Protection Active'
-                  : 'Protection Off'}
+                  : 'Standby — Protected'}
               </span>
             </div>
 

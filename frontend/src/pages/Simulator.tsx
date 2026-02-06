@@ -306,7 +306,7 @@ export default function Simulator() {
           <div className="bg-gray-50 rounded-2xl overflow-hidden border border-gray-100">
             <h2 className="text-xl font-extrabold text-gray-900 px-4 pt-3 pb-2">Who to follow</h2>
             {[
-              { name: 'ZenShield Official', handle: '@zenshield_app', verified: true },
+              { name: 'MindShield Official', handle: '@mindshield_app', verified: true },
               { name: 'Online Safety Org', handle: '@onlinesafety', verified: true },
               { name: 'Anti-Bully Alliance', handle: '@antibully_org', verified: false },
             ].map((user, i) => (

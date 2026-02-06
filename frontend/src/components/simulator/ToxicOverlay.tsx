@@ -8,7 +8,7 @@ export default function ToxicOverlay({ category, reason }: ToxicOverlayProps) {
     <div className="absolute inset-0 backdrop-blur-md bg-red-500/15 border-l-2 border-red-500 flex items-center justify-center transition-all duration-500 group">
       <div className="text-center p-4">
         <div className="text-2xl mb-2">🛡</div>
-        <div className="font-bold text-red-800 mb-1">Hidden by ZenShield</div>
+        <div className="font-bold text-red-800 mb-1">Hidden by MindShield</div>
         <div className="text-sm text-red-600">Category: {category}</div>
 
         {reason && (

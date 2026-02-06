@@ -323,7 +323,7 @@ export default function Logs() {
             <div>
               <h4 className="font-bold text-slate-800 text-lg">Mental Health First Insight</h4>
               <p className="text-slate-600 mt-1">
-                Today, ZenShield has saved you from approximately{' '}
+                Today, MindShield has saved you from approximately{' '}
                 <span className="font-bold text-green-500">45 minutes</span> of potential exposure to
                 toxic content. You're doing great!
               </p>

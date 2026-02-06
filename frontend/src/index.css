@@ -15,3 +15,211 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ===== Floating Ball — Futuristic Energy Orb ===== */
+
+/* Spin the whole trail ring via transform (most reliable) */
+@keyframes orb-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Ambient glow breathing */
+@keyframes glow-breathe {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.15); }
+}
+
+/* Ripple pulse (sonar ring) */
+@keyframes ripple-out {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Inner icon float */
+@keyframes icon-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+/* Core glow pulsing */
+@keyframes core-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 2px 8px rgba(255,255,255,0.3),
+      0 4px 15px var(--core-shadow, rgba(34,197,94,0.4)),
+      0 0 30px var(--core-shadow, rgba(34,197,94,0.15));
+  }
+  50% {
+    box-shadow:
+      inset 0 2px 10px rgba(255,255,255,0.4),
+      0 4px 25px var(--core-shadow, rgba(34,197,94,0.6)),
+      0 0 50px var(--core-shadow, rgba(34,197,94,0.3)),
+      0 0 80px var(--core-shadow, rgba(34,197,94,0.1));
+  }
+}
+
+/* Ball container — holds everything */
+.shield-orb {
+  position: relative;
+  width: 60px;
+  height: 60px;
+}
+
+/* ---- Rotating trail ring ---- */
+/* The ring spins via transform. Inside it, a conic-gradient
+   creates a comet-tail arc that sweeps around the ball. */
+.shield-orb-trail {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  animation: orb-spin 2.5s linear infinite;
+  pointer-events: none;
+}
+
+/* Sharp trail arc (masked to a ring) */
+.shield-orb-trail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  padding: 3px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    var(--trail-color, rgba(34,197,94,0.95)) 8%,
+    var(--trail-color-mid, rgba(34,197,94,0.4)) 18%,
+    transparent 30%
+  );
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+/* Blurred neon bloom behind the trail */
+.shield-orb-trail::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    var(--trail-color, rgba(34,197,94,0.7)) 6%,
+    transparent 22%
+  );
+  filter: blur(12px);
+  opacity: 0.8;
+}
+
+/* ---- Ambient glow halo ---- */
+.shield-orb-glow {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--glow-color, rgba(34,197,94,0.25)) 0%, transparent 70%);
+  animation: glow-breathe 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---- Ripple rings ---- */
+.shield-orb-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--ripple-color, rgba(34,197,94,0.35));
+  animation: ripple-out 2.5s ease-out infinite;
+  pointer-events: none;
+}
+
+.shield-orb-ripple-delay {
+  animation-delay: 1.25s;
+}
+
+/* ---- The core ball ---- */
+.shield-orb-core {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  cursor: grab;
+  /* Glassmorphism inner highlight */
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(255,255,255,0.4) 0%, transparent 50%),
+    var(--core-bg, linear-gradient(135deg, #22c55e 0%, #16a34a 100%));
+  animation: core-glow-pulse 3s ease-in-out infinite;
+}
+
+.shield-orb-core:hover {
+  transform: scale(1.12);
+}
+
+.shield-orb-core:active {
+  cursor: grabbing;
+}
+
+/* Icon subtle float + glow */
+.shield-orb-core svg {
+  filter: drop-shadow(0 0 8px rgba(255,255,255,0.8));
+  animation: icon-float 3s ease-in-out infinite;
+}
+
+/* ==========  STATE VARIANTS  ========== */
+
+/* ---- Green (default / active-protected) ---- */
+.shield-orb[data-state="green"] {
+  --trail-color: rgba(34, 197, 94, 0.95);
+  --trail-color-mid: rgba(34, 197, 94, 0.4);
+  --glow-color: rgba(34, 197, 94, 0.3);
+  --ripple-color: rgba(34, 197, 94, 0.35);
+  --core-bg: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --core-shadow: rgba(34, 197, 94, 0.5);
+}
+
+/* ---- Red (high threat / crisis) ---- */
+.shield-orb[data-state="red"] {
+  --trail-color: rgba(239, 68, 68, 0.95);
+  --trail-color-mid: rgba(239, 68, 68, 0.4);
+  --glow-color: rgba(239, 68, 68, 0.35);
+  --ripple-color: rgba(239, 68, 68, 0.4);
+  --core-bg: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  --core-shadow: rgba(239, 68, 68, 0.5);
+}
+.shield-orb[data-state="red"] .shield-orb-trail   { animation-duration: 1.2s; }
+.shield-orb[data-state="red"] .shield-orb-ripple   { animation-duration: 1.5s; }
+.shield-orb[data-state="red"] .shield-orb-ripple-delay { animation-delay: 0.75s; }
+.shield-orb[data-state="red"] .shield-orb-glow     { animation-duration: 1.5s; }
+.shield-orb[data-state="red"] .shield-orb-core     { animation-duration: 1.5s; }
+
+/* ---- Yellow (analyzing / scanning) ---- */
+.shield-orb[data-state="yellow"] {
+  --trail-color: rgba(234, 179, 8, 0.95);
+  --trail-color-mid: rgba(234, 179, 8, 0.4);
+  --glow-color: rgba(234, 179, 8, 0.35);
+  --ripple-color: rgba(234, 179, 8, 0.4);
+  --core-bg: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+  --core-shadow: rgba(234, 179, 8, 0.5);
+}
+.shield-orb[data-state="yellow"] .shield-orb-trail { animation-duration: 0.8s; }
+.shield-orb[data-state="yellow"] .shield-orb-glow  { animation-duration: 1s; }
+.shield-orb[data-state="yellow"] .shield-orb-core  { animation-duration: 1s; }
+
+/* ---- Off (standby — still green but calmer) ---- */
+.shield-orb[data-state="off"] {
+  --trail-color: rgba(34, 197, 94, 0.5);
+  --trail-color-mid: rgba(34, 197, 94, 0.15);
+  --glow-color: rgba(34, 197, 94, 0.12);
+  --ripple-color: rgba(34, 197, 94, 0.15);
+  --core-bg: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+  --core-shadow: rgba(34, 197, 94, 0.25);
+}
+.shield-orb[data-state="off"] .shield-orb-trail    { animation-duration: 4s; }
+.shield-orb[data-state="off"] .shield-orb-glow     { animation-duration: 5s; }
+.shield-orb[data-state="off"] .shield-orb-core     { animation-duration: 5s; }
+.shield-orb[data-state="off"] .shield-orb-ripple   { display: none; }

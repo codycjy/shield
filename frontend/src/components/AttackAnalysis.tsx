@@ -18,7 +18,7 @@ export default function AttackAnalysis() {
           </div>
           <h4 className="font-bold text-slate-700 mb-2">Take a deep breath.</h4>
           <p className="text-sm text-slate-600 leading-relaxed">
-            ZenShield has blocked <span className="font-bold text-red-500">842</span> attacks for you.
+            MindShield has blocked <span className="font-bold text-red-500">842</span> attacks for you.
           </p>
         </div>
 

@@ -20,7 +20,7 @@ export default function ClaimsCard({
   if (isEnded) {
     return (
       <div className="bg-slate-900 p-8 rounded-xl border border-slate-700 shadow-lg text-center flex flex-col items-center justify-center h-48">
-        <h3 className="text-white font-bold text-lg mb-2">Reactivate ZenShield Protection</h3>
+        <h3 className="text-white font-bold text-lg mb-2">Reactivate MindShield Protection</h3>
         <p className="text-slate-400 text-sm mb-6">
           Purchase a new plan or one-time boost to restore account protection.
         </p>
