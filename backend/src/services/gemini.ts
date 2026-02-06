@@ -17,10 +17,14 @@ export async function analyzeText(text: string): Promise<AnalyzeResult> {
     { text: SYSTEM_PROMPT },
     { text: `Analyze this text:\n"${text}"` },
   ]);
-  const raw = result.response.text().trim();
+  let raw = result.response.text().trim();
+  // Strip markdown code fences if present (e.g. ```json ... ```)
+  raw = raw.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/,"");
+  console.log(`[Gemini] input: "${text.slice(0, 80)}" => ${raw}`);
   try {
     return JSON.parse(raw);
   } catch {
+    console.error(`[Gemini] JSON parse failed for: ${raw}`);
     return { toxic: false, score: 0, category: "clean", reason: "Parse error" };
   }
 }

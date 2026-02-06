@@ -59,7 +59,7 @@ export default function Simulator() {
           response.results.forEach((result: any) => {
             results[result.id] = {
               id: result.id,
-              isToxic: result.isToxic || false,
+              isToxic: result.toxic || false,
               category: result.category || 'Unknown',
               reason: result.reason,
             };
