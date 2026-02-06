@@ -106,59 +106,164 @@ export default function Simulator() {
     }
   };
 
+  // Get list of intercepted tweets for the log
+  const interceptedTweets = Object.entries(analysisResults)
+    .filter(([, r]) => r.isToxic)
+    .map(([id, r]) => {
+      const tweet = sampleTweets.find(t => t.id === id);
+      return { ...r, author: tweet?.author || 'Unknown', handle: tweet?.handle || '' };
+    });
+
   return (
-    <div className="h-[calc(100vh-8rem)] relative bg-white">
-      <div className="h-full flex justify-center">
-        {/* Left Sidebar - Twitter-style icon nav */}
-        <div className="w-[68px] xl:w-[240px] h-full border-r border-gray-200 flex flex-col items-center xl:items-start py-3 px-2 xl:px-4 flex-shrink-0">
-          {/* X Logo */}
-          <div className="p-3 rounded-full hover:bg-gray-100 cursor-pointer mb-2">
-            <svg viewBox="0 0 24 24" className="w-7 h-7 text-gray-900 fill-current">
-              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-            </svg>
+    <div className="h-[calc(100vh-8rem)] relative flex gap-5">
+      {/* Left Panel - Real-time Stats */}
+      <div className="w-[280px] h-full flex-shrink-0 overflow-y-auto space-y-4">
+        {/* Shield Status */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+            <span className="text-sm font-semibold text-gray-700">
+              {isAnalyzing ? 'Analyzing...' : isActive ? 'Shield Active' : 'Shield Inactive'}
+            </span>
           </div>
-
-          {/* Nav Items */}
-          {[
-            { icon: <path d="M21.591 7.146L12.52 1.157c-.316-.21-.724-.21-1.04 0l-9.071 5.99c-.26.173-.409.456-.409.757v13.183c0 .502.418.913.929.913h6.638c.511 0 .929-.41.929-.913v-7.075h3.008v7.075c0 .502.418.913.929.913h6.638c.511 0 .929-.41.929-.913V7.904c0-.301-.158-.584-.408-.758z" />, label: 'Home', active: true },
-            { icon: <path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z" />, label: 'Explore' },
-            { icon: <path d="M19.993 9.042C19.48 5.017 16.054 2 11.996 2s-7.49 3.021-7.999 7.051L2.866 18H7.1c.463 2.282 2.481 4 4.9 4s4.435-1.718 4.9-4h4.236l-1.143-8.958zM12 20c-1.306 0-2.417-.835-2.829-2h5.658c-.412 1.165-1.523 2-2.829 2zm-6.866-4l.847-6.698C6.364 6.272 8.941 4 11.996 4s5.627 2.268 6.013 5.295L18.858 16H5.134z" />, label: 'Notifications' },
-            { icon: <path d="M1.998 5.5c0-1.381 1.119-2.5 2.5-2.5h15c1.381 0 2.5 1.119 2.5 2.5v13c0 1.381-1.119 2.5-2.5 2.5h-15c-1.381 0-2.5-1.119-2.5-2.5v-13zm2.5-.5c-.276 0-.5.224-.5.5v2.764l8 3.638 8-3.636V5.5c0-.276-.224-.5-.5-.5h-15zm15.5 5.463l-8 3.636-8-3.638V18.5c0 .276.224.5.5.5h15c.276 0 .5-.224.5-.5v-8.037z" />, label: 'Messages' },
-            { icon: <path d="M3 4.5C3 3.12 4.12 2 5.5 2h13C19.88 2 21 3.12 21 4.5v15c0 1.38-1.12 2.5-2.5 2.5h-13C4.12 22 3 20.88 3 19.5v-15zM5.5 4c-.28 0-.5.22-.5.5v15c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5v-15c0-.28-.22-.5-.5-.5h-13zM16 10H8V8h8v2zm-8 4h8v-2H8v2z" />, label: 'Lists' },
-            { icon: <path d="M7.501 19.917L7.471 21H.472l.029-1.027c.184-6.618 3.736-8.977 7-8.977.963 0 1.95.212 2.87.672-.444.478-.851 1.03-1.212 1.656-.507-.204-1.054-.328-1.658-.328-2.767 0-4.57 2.223-4.938 6.004H7.56c-.023.302-.05.599-.059.917zm15.998.056L23.528 21H9.472l.029-1.027c.184-6.618 3.736-8.977 7-8.977s6.816 2.358 7 8.977zM21.437 19c-.367-3.781-2.17-6.004-4.938-6.004s-4.57 2.223-4.938 6.004h9.875zm-4.938-9c-.799 0-1.527-.279-2.116-.73-.138-.107-.377-.345-.502-.504-.907-.975-1.157-1.665-1.157-2.766C12.724 4.056 14.278 2.5 16.5 2.5S20.276 4.056 20.276 6c0 1.101-.25 1.791-1.157 2.766-.125.16-.364.397-.502.504-.589.451-1.317.73-2.116.73zm-7.5-4c-.799 0-1.527-.279-2.116-.73-.138-.107-.377-.345-.502-.504C5.474 3.791 5.224 3.101 5.224 2c0-1.944 1.554-3.5 3.776-3.5s3.776 1.556 3.776 3.5c0 1.101-.25 1.791-1.157 2.766-.125.16-.364.397-.502.504-.589.451-1.317.73-2.116.73z" />, label: 'Communities' },
-            { icon: <path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10S2 17.514 2 12 6.486 2 12 2zm0-2C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm.866 15.978c.133.091.301.147.469.147h.001c.478 0 .867-.397.867-.884v-1.275c0-.468-.356-.86-.821-.879l-8.271-.349c-.026-.001-.053-.002-.079-.002-.225 0-.442.088-.604.246-.187.183-.295.436-.295.7v.001c0 .536.425.975.954.999l7.779.296z" />, label: 'Premium' },
-          ].map((item, i) => (
-            <a
-              key={i}
-              className={`flex items-center gap-4 p-3 rounded-full hover:bg-gray-100 cursor-pointer transition-colors group w-full ${item.active ? 'font-bold' : ''}`}
-            >
-              <svg viewBox="0 0 24 24" className={`w-[26px] h-[26px] ${item.active ? 'text-gray-900' : 'text-gray-600'} fill-current flex-shrink-0`}>
-                {item.icon}
-              </svg>
-              <span className={`text-xl hidden xl:block ${item.active ? 'text-gray-900' : 'text-gray-600'}`}>{item.label}</span>
-            </a>
-          ))}
-
-          {/* Post Button */}
-          <button className="mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full w-12 h-12 xl:w-full xl:h-auto xl:py-3 transition-colors flex items-center justify-center">
-            <svg viewBox="0 0 24 24" className="w-6 h-6 fill-current xl:hidden">
-              <path d="M23 3c-6.62-.1-10.38 2.421-13.424 6.054C7.593 11.72 6.747 14.704 6.04 18H4.02c-.553-.577-2.236-2.003-3.72-2.41-.29-.08-.613.07-.74.35-.13.28-.035.62.22.78 2.18 1.36 3.16 3.04 3.39 3.42.16.26.44.42.75.42H8.3c1.073 0 2.16-.19 3.04-.57 3.42-1.47 6.58-5.56 7.57-9.1.59-2.11.78-4.23.63-6.33-.02-.3-.26-.55-.56-.55z" />
-            </svg>
-            <span className="hidden xl:block">Post</span>
-          </button>
-
-          {/* Profile at bottom */}
-          <div className="mt-auto p-3 rounded-full hover:bg-gray-100 cursor-pointer flex items-center gap-3 w-full">
-            <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold flex-shrink-0">J</div>
-            <div className="hidden xl:block">
-              <div className="text-gray-900 text-sm font-bold">Jennifer.K</div>
-              <div className="text-gray-500 text-sm">@jennifer_k</div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-gray-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-gray-900">{sampleTweets.length}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Total Scanned</div>
+            </div>
+            <div className="bg-red-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-red-600">{stats.intercepted}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Blocked</div>
+            </div>
+            <div className="bg-green-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-green-600">{stats.clean}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Clean</div>
+            </div>
+            <div className={`rounded-lg p-3 text-center ${
+              stats.threatLevel === 'High' ? 'bg-red-50' : stats.threatLevel === 'Medium' ? 'bg-yellow-50' : 'bg-green-50'
+            }`}>
+              <div className={`text-2xl font-bold ${
+                stats.threatLevel === 'High' ? 'text-red-600' : stats.threatLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'
+              }`}>{stats.threatLevel}</div>
+              <div className="text-xs text-gray-500 mt-0.5">Threat Level</div>
             </div>
           </div>
         </div>
 
+        {/* Category Breakdown */}
+        {Object.keys(categoryBreakdown).length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Category Breakdown</h3>
+            <div className="space-y-2">
+              {Object.entries(categoryBreakdown).map(([category, count]) => {
+                const total = stats.intercepted || 1;
+                const pct = Math.round((count / total) * 100);
+                const colorMap: Record<string, string> = {
+                  'Harassment': 'bg-red-500',
+                  'Threat': 'bg-orange-500',
+                  'Hate Speech': 'bg-purple-500',
+                  'Sarcasm': 'bg-yellow-500',
+                  'Spam': 'bg-gray-500',
+                };
+                const barColor = colorMap[category] || 'bg-blue-500';
+                return (
+                  <div key={category}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-600">{category}</span>
+                      <span className="text-gray-500 font-medium">{count} ({pct}%)</span>
+                    </div>
+                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                      <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Interception Log */}
+        {interceptedTweets.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Interception Log</h3>
+            <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
+              {interceptedTweets.map((item, i) => (
+                <div key={i} className="flex items-start gap-2 text-xs">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="font-medium text-gray-800 truncate">{item.author} <span className="text-gray-400 font-normal">{item.handle}</span></div>
+                    <div className="text-gray-500 flex items-center gap-1.5">
+                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                        item.category === 'Harassment' ? 'bg-red-100 text-red-700' :
+                        item.category === 'Threat' ? 'bg-orange-100 text-orange-700' :
+                        item.category === 'Hate Speech' ? 'bg-purple-100 text-purple-700' :
+                        item.category === 'Sarcasm' ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>{item.category}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state when not active */}
+        {!isActive && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
+            <div className="text-3xl mb-2">🛡</div>
+            <div className="text-sm font-medium text-gray-700 mb-1">Click the floating shield</div>
+            <div className="text-xs text-gray-400">Activate protection to start scanning comments in real-time</div>
+          </div>
+        )}
+      </div>
+
+      {/* Twitter Page with border */}
+      <div className="flex-1 h-full rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+        <div className="h-full flex">
+        {/* Left Sidebar - Narrow Twitter icon nav */}
+        <div className="w-[60px] h-full border-r border-gray-200 flex flex-col items-center py-3 px-1.5 flex-shrink-0">
+          {/* X Logo */}
+          <div className="p-2.5 rounded-full hover:bg-gray-100 cursor-pointer mb-1">
+            <svg viewBox="0 0 24 24" className="w-6 h-6 text-gray-900 fill-current">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+          </div>
+
+          {/* Nav Icons only */}
+          {[
+            { icon: <path d="M21.591 7.146L12.52 1.157c-.316-.21-.724-.21-1.04 0l-9.071 5.99c-.26.173-.409.456-.409.757v13.183c0 .502.418.913.929.913h6.638c.511 0 .929-.41.929-.913v-7.075h3.008v7.075c0 .502.418.913.929.913h6.638c.511 0 .929-.41.929-.913V7.904c0-.301-.158-.584-.408-.758z" />, active: true },
+            { icon: <path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.824 5.262l4.781 4.781-1.414 1.414-4.781-4.781c-1.447 1.142-3.276 1.824-5.262 1.824-4.694 0-8.5-3.806-8.5-8.5z" /> },
+            { icon: <path d="M19.993 9.042C19.48 5.017 16.054 2 11.996 2s-7.49 3.021-7.999 7.051L2.866 18H7.1c.463 2.282 2.481 4 4.9 4s4.435-1.718 4.9-4h4.236l-1.143-8.958zM12 20c-1.306 0-2.417-.835-2.829-2h5.658c-.412 1.165-1.523 2-2.829 2zm-6.866-4l.847-6.698C6.364 6.272 8.941 4 11.996 4s5.627 2.268 6.013 5.295L18.858 16H5.134z" /> },
+            { icon: <path d="M1.998 5.5c0-1.381 1.119-2.5 2.5-2.5h15c1.381 0 2.5 1.119 2.5 2.5v13c0 1.381-1.119 2.5-2.5 2.5h-15c-1.381 0-2.5-1.119-2.5-2.5v-13zm2.5-.5c-.276 0-.5.224-.5.5v2.764l8 3.638 8-3.636V5.5c0-.276-.224-.5-.5-.5h-15zm15.5 5.463l-8 3.636-8-3.638V18.5c0 .276.224.5.5.5h15c.276 0 .5-.224.5-.5v-8.037z" /> },
+            { icon: <path d="M3 4.5C3 3.12 4.12 2 5.5 2h13C19.88 2 21 3.12 21 4.5v15c0 1.38-1.12 2.5-2.5 2.5h-13C4.12 22 3 20.88 3 19.5v-15zM5.5 4c-.28 0-.5.22-.5.5v15c0 .28.22.5.5.5h13c.28 0 .5-.22.5-.5v-15c0-.28-.22-.5-.5-.5h-13zM16 10H8V8h8v2zm-8 4h8v-2H8v2z" /> },
+            { icon: <path d="M7.501 19.917L7.471 21H.472l.029-1.027c.184-6.618 3.736-8.977 7-8.977.963 0 1.95.212 2.87.672-.444.478-.851 1.03-1.212 1.656-.507-.204-1.054-.328-1.658-.328-2.767 0-4.57 2.223-4.938 6.004H7.56c-.023.302-.05.599-.059.917zm15.998.056L23.528 21H9.472l.029-1.027c.184-6.618 3.736-8.977 7-8.977s6.816 2.358 7 8.977zM21.437 19c-.367-3.781-2.17-6.004-4.938-6.004s-4.57 2.223-4.938 6.004h9.875zm-4.938-9c-.799 0-1.527-.279-2.116-.73-.138-.107-.377-.345-.502-.504-.907-.975-1.157-1.665-1.157-2.766C12.724 4.056 14.278 2.5 16.5 2.5S20.276 4.056 20.276 6c0 1.101-.25 1.791-1.157 2.766-.125.16-.364.397-.502.504-.589.451-1.317.73-2.116.73zm-7.5-4c-.799 0-1.527-.279-2.116-.73-.138-.107-.377-.345-.502-.504C5.474 3.791 5.224 3.101 5.224 2c0-1.944 1.554-3.5 3.776-3.5s3.776 1.556 3.776 3.5c0 1.101-.25 1.791-1.157 2.766-.125.16-.364.397-.502.504-.589.451-1.317.73-2.116.73z" /> },
+          ].map((item, i) => (
+            <a
+              key={i}
+              className={`p-2.5 rounded-full hover:bg-gray-100 cursor-pointer transition-colors ${item.active ? 'font-bold' : ''}`}
+            >
+              <svg viewBox="0 0 24 24" className={`w-[26px] h-[26px] ${item.active ? 'text-gray-900' : 'text-gray-600'} fill-current`}>
+                {item.icon}
+              </svg>
+            </a>
+          ))}
+
+          {/* Post Button */}
+          <button className="mt-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-full w-11 h-11 transition-colors flex items-center justify-center">
+            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current">
+              <path d="M23 3c-6.62-.1-10.38 2.421-13.424 6.054C7.593 11.72 6.747 14.704 6.04 18H4.02c-.553-.577-2.236-2.003-3.72-2.41-.29-.08-.613.07-.74.35-.13.28-.035.62.22.78 2.18 1.36 3.16 3.04 3.39 3.42.16.26.44.42.75.42H8.3c1.073 0 2.16-.19 3.04-.57 3.42-1.47 6.58-5.56 7.57-9.1.59-2.11.78-4.23.63-6.33-.02-.3-.26-.55-.56-.55z" />
+            </svg>
+          </button>
+
+          {/* Profile at bottom */}
+          <div className="mt-auto p-1.5 rounded-full hover:bg-gray-100 cursor-pointer">
+            <div className="w-9 h-9 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold text-sm">J</div>
+          </div>
+        </div>
+
         {/* Center Feed */}
-        <div className="h-full w-full max-w-[600px] border-r border-gray-200 flex-shrink-0">
+        <div className="h-full flex-1 min-w-0 border-r border-gray-200">
           <TwitterFeed
             tweets={sampleTweets}
             analysisResults={analysisResults}
@@ -167,7 +272,7 @@ export default function Simulator() {
         </div>
 
         {/* Right Sidebar - Trending */}
-        <div className="hidden lg:block w-[350px] h-full py-3 px-6 overflow-y-auto flex-shrink-0">
+        <div className="hidden xl:block w-[280px] h-full py-3 px-4 overflow-y-auto flex-shrink-0">
           {/* Search Bar */}
           <div className="mb-4">
             <div className="bg-gray-100 rounded-full flex items-center px-4 py-2.5 border border-transparent focus-within:border-sky-500 focus-within:bg-white transition-colors">
@@ -233,6 +338,7 @@ export default function Simulator() {
             <span className="hover:underline cursor-pointer">Cookie Policy</span>
             <span className="hover:underline cursor-pointer">Accessibility</span>
           </div>
+        </div>
         </div>
       </div>
 
