@@ -1,0 +1,365 @@
+{
+  "info": {
+    "_postman_id": "zenshield-api-collection",
+    "name": "ZenShield API",
+    "description": "Complete collection for ZenShield Backend API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Verify server is running"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Authenticate and get token"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Content Analysis",
+      "item": [
+        {
+          "name": "Analyze Single Text - Clean Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"This is a great day!\",\n  \"platform\": \"twitter\",\n  \"contentType\": \"comment\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analyze",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analyze"
+              ]
+            },
+            "description": "Analyze safe content"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze Single Text - Toxic Content",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"You are worthless and should disappear\",\n  \"platform\": \"twitter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analyze",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analyze"
+              ]
+            },
+            "description": "Analyze toxic content"
+          },
+          "response": []
+        },
+        {
+          "name": "Analyze Batch",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    {\n      \"id\": \"post_1\",\n      \"text\": \"Great content!\"\n    },\n    {\n      \"id\": \"post_2\",\n      \"text\": \"I hate everyone here\"\n    },\n    {\n      \"id\": \"post_3\",\n      \"text\": \"Just checking in\"\n    }\n  ],\n  \"platform\": \"twitter\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/analyze/batch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "analyze",
+                "batch"
+              ]
+            },
+            "description": "Analyze multiple texts in one request"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Protection Management",
+      "item": [
+        {
+          "name": "Get Protection Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/protection/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "protection",
+                "status"
+              ]
+            },
+            "description": "Get current protection mode and statistics"
+          },
+          "response": []
+        },
+        {
+          "name": "Activate Crisis Mode",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/protection/activate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "protection",
+                "activate"
+              ]
+            },
+            "description": "Switch to crisis protection mode"
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Crisis Mode",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/protection/deactivate",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "protection",
+                "deactivate"
+              ]
+            },
+            "description": "Return to daily protection mode"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Logs & Statistics",
+      "item": [
+        {
+          "name": "Get Logs - Page 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logs?page=1&pageSize=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retrieve first page of interception logs"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs - Page 2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logs?page=2&pageSize=20",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "2"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retrieve second page of logs"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Logs - Large Page Size",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logs?page=1&pageSize=100",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Retrieve logs with larger page size"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Statistics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/logs/stats",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "logs",
+                "stats"
+              ]
+            },
+            "description": "Get aggregated statistics about intercepted content"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Real-time Events",
+      "item": [
+        {
+          "name": "Server-Sent Events Stream",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/events",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "events"
+              ]
+            },
+            "description": "Connect to real-time SSE stream for status updates. This endpoint keeps the connection open and streams status events."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

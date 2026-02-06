@@ -1,0 +1,632 @@
+openapi: 3.0.0
+info:
+  title: ZenShield Backend API
+  description: Real-time content toxicity detection and protection system powered by Gemini AI
+  version: 1.0.0
+  contact:
+    name: ZenShield Team
+    url: https://zenshield.dev
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.zenshield.dev
+    description: Production server
+
+paths:
+  /health:
+    get:
+      summary: Health check endpoint
+      description: Verify server is running without authentication
+      operationId: getHealth
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+              examples:
+                success:
+                  value:
+                    status: ok
+
+  /api/auth/login:
+    post:
+      summary: Authenticate user
+      description: Login with email and password to receive authentication token
+      operationId: authLogin
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              standard:
+                value:
+                  email: user@example.com
+                  password: password123
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  value:
+                    token: demo_token_12345
+                    user:
+                      id: user_123
+                      email: user@example.com
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/analyze:
+    post:
+      summary: Analyze single text for toxicity
+      description: Analyze a single text using Gemini AI to detect toxic content
+      operationId: analyzeText
+      tags:
+        - Content Analysis
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+            examples:
+              safe_content:
+                value:
+                  text: "This is a great day!"
+                  platform: twitter
+              toxic_content:
+                value:
+                  text: "Offensive content example"
+                  platform: instagram
+                  contentType: comment
+      responses:
+        '200':
+          description: Analysis successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeResult'
+              examples:
+                safe:
+                  value:
+                    toxic: false
+                    score: 0.05
+                    category: clean
+                    reason: Content is positive and non-harmful
+                toxic:
+                  value:
+                    toxic: true
+                    score: 0.92
+                    category: harassment
+                    reason: Contains targeted harassment and abusive language
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/analyze/batch:
+    post:
+      summary: Analyze multiple texts
+      description: Analyze multiple texts in a single batch request for efficiency
+      operationId: analyzeTextBatch
+      tags:
+        - Content Analysis
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchAnalyzeRequest'
+            examples:
+              standard:
+                value:
+                  items:
+                    - id: post_1
+                      text: Great content!
+                    - id: post_2
+                      text: Harmful content
+                    - id: post_3
+                      text: Another comment
+                  platform: twitter
+      responses:
+        '200':
+          description: Batch analysis successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAnalyzeResult'
+              examples:
+                standard:
+                  value:
+                    results:
+                      - id: post_1
+                        toxic: false
+                        score: 0.1
+                        category: clean
+                        reason: Positive engagement
+                      - id: post_2
+                        toxic: true
+                        score: 0.89
+                        category: harassment
+                        reason: Contains abusive language
+                      - id: post_3
+                        toxic: false
+                        score: 0.15
+                        category: clean
+                        reason: Neutral comment
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/protection/status:
+    get:
+      summary: Get current protection status
+      description: Retrieve current protection mode and interception statistics
+      operationId: getProtectionStatus
+      tags:
+        - Protection Management
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Protection status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectionStatus'
+              examples:
+                daily_mode:
+                  value:
+                    mode: daily
+                    activatedAt: "2025-02-05T10:30:00Z"
+                    interceptedCount: 42
+                crisis_mode:
+                  value:
+                    mode: crisis
+                    activatedAt: "2025-02-05T10:35:45Z"
+                    interceptedCount: 45
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/protection/activate:
+    post:
+      summary: Activate crisis protection mode
+      description: Switch to enhanced crisis protection mode for maximum safety
+      operationId: activateProtection
+      tags:
+        - Protection Management
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Crisis mode activated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectionStatus'
+              examples:
+                activated:
+                  value:
+                    mode: crisis
+                    activatedAt: "2025-02-05T10:35:45Z"
+                    interceptedCount: 42
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/protection/deactivate:
+    post:
+      summary: Deactivate crisis mode
+      description: Return from crisis mode to standard daily protection
+      operationId: deactivateProtection
+      tags:
+        - Protection Management
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Returned to daily mode
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProtectionStatus'
+              examples:
+                deactivated:
+                  value:
+                    mode: daily
+                    activatedAt: "2025-02-05T10:40:15Z"
+                    interceptedCount: 42
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/logs:
+    get:
+      summary: Get paginated logs
+      description: Retrieve paginated list of intercepted content logs
+      operationId: getLogs
+      tags:
+        - Logs & Statistics
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (1-indexed)
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: pageSize
+          in: query
+          description: Items per page
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Logs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogsResponse'
+              examples:
+                standard:
+                  value:
+                    logs:
+                      - id: log_550e8400-e29b-41d4-a716-446655440000
+                        text: This is the intercepted content
+                        result:
+                          toxic: true
+                          score: 0.87
+                          category: harassment
+                          reason: Contains targeted harassment
+                        action: hidden
+                        platform: twitter
+                        createdAt: "2025-02-05T09:15:30Z"
+                    pagination:
+                      page: 1
+                      pageSize: 20
+                      total: 145
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/logs/stats:
+    get:
+      summary: Get aggregated statistics
+      description: Retrieve statistics about intercepted content by category
+      operationId: getLogStats
+      tags:
+        - Logs & Statistics
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Statistics retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogStats'
+              examples:
+                standard:
+                  value:
+                    totalIntercepted: 427
+                    last24h: 12
+                    byCategory:
+                      clean: 0
+                      harassment: 145
+                      hate_speech: 89
+                      threat: 34
+                      sarcasm: 123
+                      spam: 36
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/events:
+    get:
+      summary: Real-time status stream (SSE)
+      description: Server-Sent Events stream for real-time protection status and interception updates
+      operationId: getEvents
+      tags:
+        - Real-time Events
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: SSE stream established
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                status_event:
+                  value: |
+                    event: status
+                    data: {"mode":"crisis","activatedAt":"2025-02-05T10:35:45Z","interceptedCount":45,"stats":{"totalIntercepted":427,"last24h":12,"byCategory":{"harassment":145,"hate_speech":89,"threat":34,"sarcasm":123,"spam":36,"clean":0}}}
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User email address
+        password:
+          type: string
+          format: password
+          description: User password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Authentication token for API requests
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+              description: User ID
+            email:
+              type: string
+              format: email
+              description: User email
+
+    AnalyzeRequest:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          description: Text to analyze for toxicity
+          minLength: 1
+          maxLength: 5000
+        platform:
+          type: string
+          enum: [twitter, instagram]
+          default: twitter
+          description: Source platform
+        contentType:
+          type: string
+          enum: [comment, dm]
+          description: Type of content
+
+    AnalyzeResult:
+      type: object
+      properties:
+        toxic:
+          type: boolean
+          description: Whether content is flagged as toxic
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Toxicity score (0=clean, 1=extremely toxic)
+        category:
+          type: string
+          enum:
+            - clean
+            - harassment
+            - hate_speech
+            - threat
+            - sarcasm
+            - spam
+          description: Content category
+        reason:
+          type: string
+          description: Brief explanation of the decision
+
+    BatchAnalyzeRequest:
+      type: object
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 100
+          items:
+            type: object
+            required:
+              - id
+              - text
+            properties:
+              id:
+                type: string
+                description: Unique identifier for the item
+              text:
+                type: string
+                description: Text to analyze
+                minLength: 1
+                maxLength: 5000
+        platform:
+          type: string
+          enum: [twitter, instagram]
+          default: twitter
+          description: Source platform
+
+    BatchAnalyzeResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            allOf:
+              - type: object
+                properties:
+                  id:
+                    type: string
+                    description: Matches request item id
+              - $ref: '#/components/schemas/AnalyzeResult'
+
+    ProtectionStatus:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [off, daily, crisis]
+          description: Current protection mode
+        activatedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: ISO 8601 timestamp when activated
+        interceptedCount:
+          type: integer
+          description: Number of items intercepted in current mode
+
+    LogEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique log entry identifier
+        text:
+          type: string
+          description: The intercepted content
+        result:
+          $ref: '#/components/schemas/AnalyzeResult'
+        action:
+          type: string
+          enum: [hidden, deleted, auto_reply]
+          description: Action taken on the content
+        platform:
+          type: string
+          description: Source platform
+        createdAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp
+
+    LogsResponse:
+      type: object
+      properties:
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+        pagination:
+          type: object
+          properties:
+            page:
+              type: integer
+            pageSize:
+              type: integer
+            total:
+              type: integer
+
+    LogStats:
+      type: object
+      properties:
+        totalIntercepted:
+          type: integer
+          description: Total harmful content blocked all-time
+        last24h:
+          type: integer
+          description: Harmful content blocked in last 24 hours
+        byCategory:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Count of blocked content by category
+
+    SSEStatusEvent:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [off, daily, crisis]
+        activatedAt:
+          type: string
+          format: date-time
+        interceptedCount:
+          type: integer
+        stats:
+          $ref: '#/components/schemas/LogStats'
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+
+  responses:
+    BadRequestError:
+      description: Bad request - invalid input
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            missing_field:
+              value:
+                error: "text is required"
+            empty_batch:
+              value:
+                error: "items is required"
+
+    UnauthorizedError:
+      description: Unauthorized - authentication required or failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          examples:
+            unauthorized:
+              value:
+                error: "Unauthorized"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Bearer token from login endpoint
+
+tags:
+  - name: Health
+    description: Server health status
+  - name: Authentication
+    description: User authentication endpoints
+  - name: Content Analysis
+    description: Text analysis using Gemini AI
+  - name: Protection Management
+    description: Protection mode management
+  - name: Logs & Statistics
+    description: Interception logs and statistics
+  - name: Real-time Events
+    description: Server-Sent Events for real-time updates

@@ -1,0 +1,148 @@
+{
+  "info": {
+    "name": "Shield Backend API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/health"
+      }
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Demo Login",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/demo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analyze",
+      "item": [
+        {
+          "name": "Analyze Single Text",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/analyze",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Demo-Mode", "value": "true" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"You are such a terrible person, I hope you disappear\",\n  \"platform\": \"twitter\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Analyze Single Text (Clean)",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/analyze",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Demo-Mode", "value": "true" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Great video! Really enjoyed your content today.\",\n  \"platform\": \"twitter\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Batch Analyze",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/analyze/batch",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "X-Demo-Mode", "value": "true" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"items\": [\n    { \"id\": \"1\", \"text\": \"Love your work, keep it up!\" },\n    { \"id\": \"2\", \"text\": \"Go kill yourself nobody likes you\" },\n    { \"id\": \"3\", \"text\": \"Oh wow, what a genius take... said no one ever\" },\n    { \"id\": \"4\", \"text\": \"你这种人就不该上网，赶紧滚吧\" },\n    { \"id\": \"5\", \"text\": \"Interesting perspective, I disagree though\" }\n  ],\n  \"platform\": \"twitter\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Protection",
+      "item": [
+        {
+          "name": "Get Status",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/protection/status",
+            "header": [
+              { "key": "X-Demo-Mode", "value": "true" }
+            ]
+          }
+        },
+        {
+          "name": "Activate Crisis Mode",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/protection/activate",
+            "header": [
+              { "key": "X-Demo-Mode", "value": "true" }
+            ]
+          }
+        },
+        {
+          "name": "Deactivate Crisis Mode",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/protection/deactivate",
+            "header": [
+              { "key": "X-Demo-Mode", "value": "true" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logs",
+      "item": [
+        {
+          "name": "Get Logs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/logs?page=1&pageSize=20",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "pageSize", "value": "20" }
+              ]
+            },
+            "header": [
+              { "key": "X-Demo-Mode", "value": "true" }
+            ]
+          }
+        },
+        {
+          "name": "Get Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/logs/stats",
+            "header": [
+              { "key": "X-Demo-Mode", "value": "true" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
