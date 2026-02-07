@@ -91,13 +91,11 @@ export default function FloatingBall({
     High: 'text-red-600 bg-red-100',
   };
 
-  // Determine orb state for CSS
+  // Determine orb state directly from phase
   const getOrbState = () => {
     if (phase === 'ended') return 'gray';
-    if (isAnalyzing) return 'yellow';
-    if (isActive && stats.threatLevel === 'High') return 'red';
-    if (isActive) return 'green';
-    return 'off'; // off = green but slower/dimmer
+    if (phase === 'crisis') return 'red';
+    return 'green'; // normal = active protection
   };
 
   return (
