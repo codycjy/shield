@@ -18,7 +18,7 @@ export function DailyMode({
 }: DailyModeProps) {
   return (
     <div className="flex flex-col h-full">
-      <Header title="ZenShield" mode="daily" />
+      <Header title="MindShield" mode="daily" />
 
       <div className="flex-1 px-6">
         <ShieldIcon mode="daily" />

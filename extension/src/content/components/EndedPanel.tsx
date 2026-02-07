@@ -38,7 +38,7 @@ const EndedPanel: React.FC = () => {
           One-Click Protection (Unavailable)
         </button>
         <button
-          onClick={() => window.open('https://zenshield.com/pricing', '_blank')}
+          onClick={() => window.open('https://mindshield.com/pricing', '_blank')}
           className="w-full bg-green-500 text-white text-xs font-bold py-2.5 rounded-lg hover:bg-green-600 shadow-md flex items-center justify-center gap-1 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

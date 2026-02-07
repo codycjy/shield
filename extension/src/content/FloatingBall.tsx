@@ -64,11 +64,11 @@ const FloatingBall: React.FC = () => {
       setMode(event.detail.mode || 'daily');
     }) as EventListener;
 
-    window.addEventListener('zenshield:stateUpdate', handleStateUpdate);
+    window.addEventListener('mindshield:stateUpdate', handleStateUpdate);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
-      window.removeEventListener('zenshield:stateUpdate', handleStateUpdate);
+      window.removeEventListener('mindshield:stateUpdate', handleStateUpdate);
     };
   }, []);
 

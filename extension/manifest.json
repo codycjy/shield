@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "ZenShield",
+  "name": "MindShield",
   "version": "1.0.0",
   "description": "Anti-cyberbullying shield for content creators",
   "permissions": ["storage", "activeTab", "tabs"],

@@ -13,8 +13,10 @@ const statements = {
 
   // Logs
   insertLog: db.prepare(`
-    INSERT INTO logs (id, text, toxic, score, category, reason, action, platform, created_at)
-    VALUES ($id, $text, $toxic, $score, $category, $reason, $action, $platform, $created_at)
+    INSERT INTO logs (id, text, toxic, score, category, reason, action, platform, created_at,
+                      severity, is_exempted, processing_path, all_scores, llm_analysis)
+    VALUES ($id, $text, $toxic, $score, $category, $reason, $action, $platform, $created_at,
+            $severity, $is_exempted, $processing_path, $all_scores, $llm_analysis)
   `),
   getLogs: db.prepare<
     {
@@ -27,6 +29,11 @@ const statements = {
       action: string;
       platform: string;
       created_at: string;
+      severity: string | null;
+      is_exempted: number;
+      processing_path: string | null;
+      all_scores: string | null;
+      llm_analysis: string | null;
     },
     [number, number]
   >("SELECT * FROM logs ORDER BY created_at DESC LIMIT ? OFFSET ?"),
@@ -69,6 +76,15 @@ class SQLiteStore {
       $action: entry.action,
       $platform: entry.platform,
       $created_at: entry.createdAt,
+      $severity: entry.result.severity || "medium",
+      $is_exempted: entry.result.isExempted ? 1 : 0,
+      $processing_path: entry.result.processingPath || "",
+      $all_scores: entry.result.allScores
+        ? JSON.stringify(entry.result.allScores)
+        : "{}",
+      $llm_analysis: entry.result.llmAnalysis
+        ? JSON.stringify(entry.result.llmAnalysis)
+        : null,
     });
   }
 
@@ -85,6 +101,11 @@ class SQLiteStore {
         score: row.score,
         category: row.category,
         reason: row.reason || "",
+        severity: row.severity || "medium",
+        isExempted: row.is_exempted === 1,
+        processingPath: row.processing_path || "",
+        allScores: row.all_scores ? JSON.parse(row.all_scores) : {},
+        llmAnalysis: row.llm_analysis ? JSON.parse(row.llm_analysis) : null,
       },
       action: row.action as LogEntry["action"],
       platform: row.platform,

@@ -76,7 +76,7 @@
 }
 
 /* Ensure content script doesn't inherit page styles */
-#zenshield-floating-ball-root {
+#mindshield-floating-ball-root {
   all: initial;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }

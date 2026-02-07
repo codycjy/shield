@@ -1,7 +1,7 @@
-// Background service worker for ZenShield extension
+// Background service worker for MindShield extension
 // Handles messaging between popup and content scripts
 
-console.log('ZenShield background service worker loaded');
+console.log('MindShield background service worker loaded');
 
 // Listen for state changes from popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -75,7 +75,7 @@ function isTargetDomain(url?: string): boolean {
 
 // Handle extension installation
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('ZenShield installed:', details.reason);
+  console.log('MindShield installed:', details.reason);
 
   if (details.reason === 'install') {
     // Set default state on first install
