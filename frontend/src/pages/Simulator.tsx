@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { sampleTweets } from '../lib/sampleData';
+import { useState, useCallback } from 'react';
+import { sampleTweets, type Tweet } from '../lib/sampleData';
 import { api } from '../lib/api';
 import TwitterFeed from '../components/simulator/TwitterFeed';
 import FloatingBall from '../components/simulator/FloatingBall';
@@ -9,12 +9,16 @@ interface AnalysisResult {
   isToxic: boolean;
   category: string;
   reason?: string;
+  severity?: string;
+  llmAnalysis?: any;
 }
 
 export default function Simulator() {
   const [isActive, setIsActive] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isPosting, setIsPosting] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<Record<string, AnalysisResult>>({});
+  const [userTweets, setUserTweets] = useState<Tweet[]>([]);
 
   const stats = {
     intercepted: Object.values(analysisResults).filter(r => r.isToxic).length,
@@ -44,7 +48,7 @@ export default function Simulator() {
 
       try {
         // Prepare items for analysis
-        const items = sampleTweets.map(tweet => ({
+        const items = [...userTweets, ...sampleTweets].map(tweet => ({
           id: tweet.id,
           text: tweet.text,
         }));
@@ -106,11 +110,57 @@ export default function Simulator() {
     }
   };
 
+  // Handle user posting a comment — analyze it in real time
+  const handlePost = useCallback(async (text: string) => {
+    setIsPosting(true);
+    const tweetId = `user_${Date.now()}`;
+
+    // Create tweet object
+    const newTweet: Tweet = {
+      id: tweetId,
+      author: 'You',
+      handle: '@you',
+      avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
+      text,
+      timestamp: 'just now',
+      likes: 0,
+      retweets: 0,
+      replies: 0,
+    };
+
+    // Add to feed immediately
+    setUserTweets(prev => [newTweet, ...prev]);
+
+    try {
+      // Call backend → AI service
+      const result = await api.analyze(text);
+
+      setAnalysisResults(prev => ({
+        ...prev,
+        [tweetId]: {
+          id: tweetId,
+          isToxic: result.toxic || false,
+          category: result.category || 'clean',
+          reason: result.reason,
+          severity: result.severity,
+          llmAnalysis: result.llmAnalysis,
+        },
+      }));
+    } catch (err) {
+      console.error('Analysis failed:', err);
+    } finally {
+      setIsPosting(false);
+    }
+  }, []);
+
+  // Combined tweets: user-posted first, then sample data
+  const allTweets = [...userTweets, ...sampleTweets];
+
   // Get list of intercepted tweets for the log
   const interceptedTweets = Object.entries(analysisResults)
     .filter(([, r]) => r.isToxic)
     .map(([id, r]) => {
-      const tweet = sampleTweets.find(t => t.id === id);
+      const tweet = allTweets.find(t => t.id === id);
       return { ...r, author: tweet?.author || 'Unknown', handle: tweet?.handle || '' };
     });
 
@@ -128,7 +178,7 @@ export default function Simulator() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-gray-900">{sampleTweets.length}</div>
+              <div className="text-2xl font-bold text-gray-900">{allTweets.length}</div>
               <div className="text-xs text-gray-500 mt-0.5">Total Scanned</div>
             </div>
             <div className="bg-red-50 rounded-lg p-3 text-center">
@@ -265,9 +315,11 @@ export default function Simulator() {
         {/* Center Feed */}
         <div className="h-full flex-1 min-w-0 border-r border-gray-200">
           <TwitterFeed
-            tweets={sampleTweets}
+            tweets={allTweets}
             analysisResults={analysisResults}
             isShielded={isActive}
+            onPost={handlePost}
+            isPosting={isPosting}
           />
         </div>
 
@@ -312,7 +364,7 @@ export default function Simulator() {
             ].map((user, i) => (
               <div key={i} className="px-4 py-3 hover:bg-gray-100 cursor-pointer transition-colors flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-sm">{user.name[0]}</div>
+                  <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 font-bold text-sm flex-shrink-0">{user.name[0]}</div>
                   <div>
                     <div className="flex items-center gap-1">
                       <span className="text-[15px] font-bold text-gray-900">{user.name}</span>

@@ -1,5 +1,4 @@
 import type { Tweet } from '../../lib/sampleData';
-import ToxicOverlay from './ToxicOverlay';
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -40,7 +39,24 @@ export default function TweetCard({
           </div>
 
           {/* Tweet text */}
-          <p className="text-gray-900 text-[15px] leading-5 mb-3 whitespace-pre-wrap">{tweet.text}</p>
+          {showOverlay ? (
+            <div className="mb-3 relative">
+              <p className="text-gray-900 text-[15px] leading-5 whitespace-pre-wrap select-none"
+                style={{ filter: 'blur(6px)', WebkitUserSelect: 'none' }}
+              >
+                {tweet.text}
+              </p>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-full px-3 py-1 shadow-sm">
+                  <span className="text-sm">🛡</span>
+                  <span className="text-xs font-semibold text-red-600">Hidden by MindShield</span>
+                  <span className="text-[10px] text-red-400 ml-1">({category})</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-900 text-[15px] leading-5 mb-3 whitespace-pre-wrap">{tweet.text}</p>
+          )}
 
           {/* Actions */}
           <div className="flex items-center justify-between max-w-[425px] text-gray-500">
@@ -79,8 +95,6 @@ export default function TweetCard({
         </div>
       </div>
 
-      {/* Toxic overlay */}
-      {showOverlay && <ToxicOverlay category={category} reason={reason} />}
     </div>
   );
 }

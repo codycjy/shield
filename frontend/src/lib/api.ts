@@ -16,6 +16,11 @@ export const api = {
   getStatus: () => apiFetch('/api/protection/status'),
   activate: () => apiFetch('/api/protection/activate', { method: 'POST' }),
   deactivate: () => apiFetch('/api/protection/deactivate', { method: 'POST' }),
+  analyze: (text: string, platform = 'twitter') =>
+    apiFetch('/api/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ text, platform }),
+    }),
   analyzeBatch: (items: Array<{ id: string; text: string }>) =>
     apiFetch('/api/analyze/batch', {
       method: 'POST',

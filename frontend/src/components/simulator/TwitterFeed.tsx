@@ -1,3 +1,4 @@
+import { useState, useRef } from 'react';
 import type { Tweet } from '../../lib/sampleData';
 import TweetCard from './TweetCard';
 
@@ -6,19 +7,55 @@ interface AnalysisResult {
   isToxic: boolean;
   category: string;
   reason?: string;
+  severity?: string;
+  llmAnalysis?: any;
 }
 
 interface TwitterFeedProps {
   tweets: Tweet[];
   analysisResults: Record<string, AnalysisResult>;
   isShielded: boolean;
+  onPost?: (text: string) => Promise<void>;
+  isPosting?: boolean;
 }
 
 export default function TwitterFeed({
   tweets,
   analysisResults,
   isShielded,
+  onPost,
+  isPosting = false,
 }: TwitterFeedProps) {
+  const [composeText, setComposeText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handlePost = async () => {
+    const text = composeText.trim();
+    if (!text || !onPost) return;
+    await onPost(text);
+    setComposeText('');
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      handlePost();
+    }
+  };
+
+  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setComposeText(e.target.value);
+    // Auto-resize
+    const el = e.target;
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
+  };
+
+  const canPost = composeText.trim().length > 0 && !isPosting;
+
   return (
     <div className="h-full overflow-y-auto bg-white">
       {/* Twitter header */}
@@ -42,8 +79,16 @@ export default function TwitterFeed({
       <div className="border-b border-gray-200 p-4 flex gap-3">
         <div className="w-10 h-10 rounded-full bg-sky-500 flex items-center justify-center text-white font-bold flex-shrink-0">J</div>
         <div className="flex-1">
-          <div className="text-gray-400 text-xl py-2">What is happening?!</div>
-          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+          <textarea
+            ref={textareaRef}
+            value={composeText}
+            onChange={handleInput}
+            onKeyDown={handleKeyDown}
+            placeholder="What is happening?!"
+            rows={1}
+            className="w-full text-xl text-gray-900 placeholder-gray-400 outline-none resize-none py-2 bg-transparent"
+          />
+          <div className="flex items-center justify-between mt-1 pt-3 border-t border-gray-100">
             <div className="flex gap-1">
               {['M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
                 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
@@ -55,7 +100,23 @@ export default function TwitterFeed({
                 </button>
               ))}
             </div>
-            <button className="bg-sky-500 text-white font-bold rounded-full px-5 py-1.5 text-[15px] opacity-50 cursor-not-allowed">Post</button>
+            <div className="flex items-center gap-2">
+              {isPosting && (
+                <div className="w-4 h-4 border-2 border-sky-500 border-t-transparent rounded-full animate-spin" />
+              )}
+              <span className="text-xs text-gray-400">Cmd+Enter</span>
+              <button
+                onClick={handlePost}
+                disabled={!canPost}
+                className={`font-bold rounded-full px-5 py-1.5 text-[15px] transition-all ${
+                  canPost
+                    ? 'bg-sky-500 hover:bg-sky-600 text-white cursor-pointer'
+                    : 'bg-sky-300 text-white cursor-not-allowed'
+                }`}
+              >
+                Post
+              </button>
+            </div>
           </div>
         </div>
       </div>
