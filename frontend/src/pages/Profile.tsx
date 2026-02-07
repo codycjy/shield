@@ -1,3 +1,5 @@
+import SocialConnections from '../components/SocialConnections';
+
 export default function Profile() {
   return (
     <div className="max-w-4xl space-y-6">
@@ -34,6 +36,9 @@ export default function Profile() {
         </div>
       </div>
 
+      {/* Social Connections */}
+      <SocialConnections />
+
       {/* Subscription */}
       <div className="bg-white rounded-xl shadow-sm p-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-6">Subscription</h2>
@@ -59,58 +64,6 @@ export default function Profile() {
           <button className="flex-1 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
             Purchase Extra Claims
           </button>
-        </div>
-      </div>
-
-      {/* Connected Accounts */}
-      <div className="bg-white rounded-xl shadow-sm p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-6">Connected Accounts</h2>
-        <div className="space-y-4">
-          {/* Twitter */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                <span className="text-white text-lg font-bold">𝕏</span>
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Twitter</div>
-                <div className="text-sm text-gray-500">@jennifer_k</div>
-              </div>
-            </div>
-            <button className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-              Disconnect
-            </button>
-          </div>
-
-          {/* Instagram */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg"></div>
-              <div>
-                <div className="font-medium text-gray-900">Instagram</div>
-                <div className="text-sm text-gray-500">Not connected</div>
-              </div>
-            </div>
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              Connect
-            </button>
-          </div>
-
-          {/* Facebook */}
-          <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-lg font-bold">f</span>
-              </div>
-              <div>
-                <div className="font-medium text-gray-900">Facebook</div>
-                <div className="text-sm text-gray-500">Not connected</div>
-              </div>
-            </div>
-            <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-              Connect
-            </button>
-          </div>
         </div>
       </div>
     </div>

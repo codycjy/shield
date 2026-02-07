@@ -252,7 +252,7 @@ export default function Logs() {
                           <span className="text-xs text-slate-400">· {log.user.timestamp}</span>
                         </div>
                         <div className="group/blur relative cursor-pointer inline-block">
-                          <p className="blur-text text-slate-600 transition-all group-hover/blur:blur-none">
+                          <p className="blur-[5px] text-slate-600 transition-all group-hover/blur:blur-none">
                             {log.content}
                           </p>
                           <div className="eye-icon absolute inset-0 flex items-center justify-center text-green-500 bg-white/50 opacity-100 transition-opacity group-hover/blur:opacity-0 pointer-events-none">
@@ -338,11 +338,6 @@ export default function Logs() {
         </div>
       </div>
 
-      <style>{`
-        .blur-text {
-          filter: blur(5px);
-        }
-      `}</style>
     </div>
   );
 }
