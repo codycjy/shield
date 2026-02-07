@@ -1,6 +1,7 @@
 import type { AnalyzeResult, AIFilterResponse } from "../types";
 
-const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:5001";
+const AI_SERVICE_URL = process.env.AI_SERVICE_URL || "http://localhost:5000";
+console.log(`[ai-client] AI_SERVICE_URL = ${AI_SERVICE_URL}`);
 
 function mapAIResponse(res: AIFilterResponse): AnalyzeResult {
   return {
@@ -23,18 +24,32 @@ export async function analyzeWithAI(
   text: string,
   id?: string
 ): Promise<AnalyzeResult> {
-  const response = await fetch(`${AI_SERVICE_URL}/filter`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, id: id || crypto.randomUUID() }),
-  });
+  const url = `${AI_SERVICE_URL}/filter`;
+  const reqId = id || crypto.randomUUID();
+  console.log(`[ai-client] analyzeWithAI: url=${url} id=${reqId} text="${text.slice(0, 50)}"`);
 
-  if (!response.ok) {
-    throw new Error(`AI service responded ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text, id: reqId }),
+    });
+
+    console.log(`[ai-client] response status=${response.status}`);
+
+    if (!response.ok) {
+      const body = await response.text();
+      console.error(`[ai-client] AI error response: ${body}`);
+      throw new Error(`AI service responded ${response.status}: ${body}`);
+    }
+
+    const data = (await response.json()) as AIFilterResponse;
+    console.log(`[ai-client] success: category=${data.category} action=${data.action}`);
+    return mapAIResponse(data);
+  } catch (e: any) {
+    console.error(`[ai-client] analyzeWithAI failed: ${e?.message || e}`);
+    throw e;
   }
-
-  const data = (await response.json()) as AIFilterResponse;
-  return mapAIResponse(data);
 }
 
 export async function analyzeWithAIBatch(

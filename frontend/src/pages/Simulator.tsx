@@ -1,8 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { sampleTweets, type Tweet } from '../lib/sampleData';
 import { api } from '../lib/api';
+import { generateRandomTweet, generateAttackBurst } from '../lib/commentPool';
 import TwitterFeed from '../components/simulator/TwitterFeed';
 import FloatingBall from '../components/simulator/FloatingBall';
+
+const MAX_GENERATED = 200; // cap to prevent unbounded growth
 
 interface AnalysisResult {
   id: string;
@@ -13,12 +16,122 @@ interface AnalysisResult {
   llmAnalysis?: any;
 }
 
+// Simple client-side toxicity heuristic for when API is unavailable
+const toxicKeywords = [
+  'die', 'kill', 'kys', 'ugly', 'fat', 'trash', 'garbage', 'idiot', 'worst',
+  'hate', 'disgusting', 'delete', 'quit', 'loser', 'nobody', 'fraud', 'scam',
+  'fake', 'clown', 'ratio', 'flop', 'unfollowed', 'cancelled',
+  '去死', '恶心', '滚', '丑', '猪', '垃圾', '傻', '退网', '凉了', '人肉',
+  'giveaway', 'guaranteed', '$5000', 'dm me', 'check my bio', 'crypto',
+  '兼职', '中奖', '投资', '私我', '包养', '爆料',
+];
+
+function mockAnalyze(tweet: Tweet): AnalysisResult {
+  const lower = tweet.text.toLowerCase();
+  const matched = toxicKeywords.some(kw => lower.includes(kw));
+
+  // Determine category
+  let category = 'Clean';
+  if (matched) {
+    if (/die|kill|kys|find.*live|address|去死|人肉|小心/.test(lower)) category = 'Threat';
+    else if (/ugly|fat|botch|skeleton|丑|猪|整容|身材/.test(lower)) category = 'Hate Speech';
+    else if (/giveaway|guaranteed|\$5000|crypto|dm.*collab|ambassador|兼职|中奖|投资|私我/.test(lower)) category = 'Spam';
+    else if (/fake|fraud|pretend|persona|爆料|包养|人设/.test(lower)) category = 'Distortion';
+    else if (/ratio|flop|nobody.*asked|didn't ask|没人问/.test(lower)) category = 'Harassment';
+    else category = 'Harassment';
+  }
+
+  return {
+    id: tweet.id,
+    isToxic: matched,
+    category,
+    reason: matched ? 'Detected toxic content' : undefined,
+  };
+}
+
 export default function Simulator() {
   const [isActive, setIsActive] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<Record<string, AnalysisResult>>({});
   const [userTweets, setUserTweets] = useState<Tweet[]>([]);
+  const [generatedTweets, setGeneratedTweets] = useState<Tweet[]>([]);
+  const isActiveRef = useRef(isActive);
+
+  // Keep ref in sync so interval callbacks see latest value
+  useEffect(() => {
+    isActiveRef.current = isActive;
+  }, [isActive]);
+
+  // ── Real-time comment generation ──────────────────────────────
+  useEffect(() => {
+    // When shield is OFF: 1 tweet every 3 seconds
+    // When shield is ON : 3 tweets every 1 second (attack simulation)
+    const interval = isActive ? 1000 : 3000;
+
+    const addTweets = async () => {
+      const active = isActiveRef.current;
+      let newTweets: Tweet[];
+
+      try {
+        // Try backend → AI service generation
+        const res = await api.generate(active ? 3 : 1, active ? 'attack' : 'normal');
+        if (res.comments?.length) {
+          newTweets = res.comments.map((c: any) => ({
+            id: c.id,
+            author: c.author,
+            handle: c.handle,
+            avatar: c.avatar,
+            text: c.text,
+            timestamp: c.timestamp || 'just now',
+            likes: c.likes ?? 0,
+            retweets: c.retweets ?? 0,
+            replies: c.replies ?? 0,
+          }));
+        } else {
+          throw new Error('empty response');
+        }
+      } catch {
+        // Fallback to local comment pool
+        newTweets = active
+          ? generateAttackBurst(3)
+          : [generateRandomTweet(0.4)];
+      }
+
+      setGeneratedTweets(prev => {
+        const updated = [...newTweets, ...prev];
+        return updated.length > MAX_GENERATED ? updated.slice(0, MAX_GENERATED) : updated;
+      });
+
+      // Auto-analyze new tweets when shield is on
+      if (active) {
+        for (const tweet of newTweets) {
+          api.analyze(tweet.text)
+            .then(result => {
+              setAnalysisResults(prev => ({
+                ...prev,
+                [tweet.id]: {
+                  id: tweet.id,
+                  isToxic: result.toxic || false,
+                  category: result.category || 'Unknown',
+                  reason: result.reason,
+                  severity: result.severity,
+                },
+              }));
+            })
+            .catch(() => {
+              setAnalysisResults(prev => ({
+                ...prev,
+                [tweet.id]: mockAnalyze(tweet),
+              }));
+            });
+        }
+      }
+    };
+
+    const timer = setInterval(addTweets, interval);
+    return () => clearInterval(timer);
+  }, [isActive]);
 
   const stats = {
     intercepted: Object.values(analysisResults).filter(r => r.isToxic).length,
@@ -43,22 +156,19 @@ export default function Simulator() {
       setIsActive(false);
       setAnalysisResults({});
     } else {
-      // Activate - analyze tweets
+      // Activate - analyze existing tweets in feed
       setIsAnalyzing(true);
 
       try {
-        // Prepare items for analysis
-        const items = [...userTweets, ...sampleTweets].map(tweet => ({
+        const allExisting = [...userTweets, ...generatedTweets, ...sampleTweets];
+        const items = allExisting.map(tweet => ({
           id: tweet.id,
           text: tweet.text,
         }));
 
-        // Call API
         const response = await api.analyzeBatch(items);
 
-        // Process results
         const results: Record<string, AnalysisResult> = {};
-
         if (response.results) {
           response.results.forEach((result: any) => {
             results[result.id] = {
@@ -73,34 +183,15 @@ export default function Simulator() {
         setAnalysisResults(results);
         setIsActive(true);
       } catch (error) {
-        console.error('Analysis failed:', error);
+        console.error('Analysis failed, using local fallback:', error);
 
-        // Fallback to mock results if API fails
+        // Fallback: analyze all tweets locally
+        const allExisting = [...userTweets, ...generatedTweets, ...sampleTweets];
         const mockResults: Record<string, AnalysisResult> = {};
 
-        // Toxic tweet IDs based on sampleData
-        const toxicTweets = [
-          { id: '3', category: 'Harassment', reason: 'Contains aggressive insults and demands for account deletion' },
-          { id: '4', category: 'Harassment', reason: 'Dismissive and insulting language' },
-          { id: '5', category: 'Sarcasm', reason: 'Heavy sarcasm and mockery' },
-          { id: '6', category: 'Sarcasm', reason: 'Sarcastic criticism' },
-          { id: '7', category: 'Threat', reason: 'Contains physical threat and intimidation' },
-          { id: '8', category: 'Hate Speech', reason: 'Dehumanizing language suggesting lack of right to exist' },
-          { id: '10', category: 'Harassment', reason: 'Chinese text containing insults and demands to leave' },
-          { id: '12', category: 'Harassment', reason: 'Harsh criticism calling content garbage' },
-          { id: '13', category: 'Spam', reason: 'All caps promotional spam' },
-          { id: '14', category: 'Hate Speech', reason: 'Dehumanizing language and wishes for non-existence' },
-        ];
-
-        sampleTweets.forEach(tweet => {
-          const toxicMatch = toxicTweets.find(t => t.id === tweet.id);
-          mockResults[tweet.id] = {
-            id: tweet.id,
-            isToxic: !!toxicMatch,
-            category: toxicMatch?.category || 'Clean',
-            reason: toxicMatch?.reason,
-          };
-        });
+        for (const tweet of allExisting) {
+          mockResults[tweet.id] = mockAnalyze(tweet);
+        }
 
         setAnalysisResults(mockResults);
         setIsActive(true);
@@ -115,7 +206,6 @@ export default function Simulator() {
     setIsPosting(true);
     const tweetId = `user_${Date.now()}`;
 
-    // Create tweet object
     const newTweet: Tweet = {
       id: tweetId,
       author: 'You',
@@ -128,11 +218,9 @@ export default function Simulator() {
       replies: 0,
     };
 
-    // Add to feed immediately
     setUserTweets(prev => [newTweet, ...prev]);
 
     try {
-      // Call backend → AI service
       const result = await api.analyze(text);
 
       setAnalysisResults(prev => ({
@@ -148,13 +236,18 @@ export default function Simulator() {
       }));
     } catch (err) {
       console.error('Analysis failed:', err);
+      // Fallback
+      setAnalysisResults(prev => ({
+        ...prev,
+        [tweetId]: mockAnalyze(newTweet),
+      }));
     } finally {
       setIsPosting(false);
     }
   }, []);
 
-  // Combined tweets: user-posted first, then sample data
-  const allTweets = [...userTweets, ...sampleTweets];
+  // Combined tweets: user-posted first, then generated, then sample data
+  const allTweets = [...userTweets, ...generatedTweets, ...sampleTweets];
 
   // Get list of intercepted tweets for the log
   const interceptedTweets = Object.entries(analysisResults)

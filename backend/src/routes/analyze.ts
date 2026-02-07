@@ -5,11 +5,21 @@ import { demoStore } from "../services/store";
 import type { AnalyzeRequest, AnalyzeResult, BatchAnalyzeRequest } from "../types";
 
 async function analyze(text: string, id?: string): Promise<AnalyzeResult> {
+  console.log(`[analyze] start: text="${text.slice(0, 50)}"`);
   try {
-    return await analyzeWithAI(text, id);
-  } catch (e) {
-    console.warn(`[AI] service unavailable, falling back to Gemini:`, e);
-    return await analyzeWithGemini(text);
+    const result = await analyzeWithAI(text, id);
+    console.log(`[analyze] AI success: category=${result.category}`);
+    return result;
+  } catch (e: any) {
+    console.warn(`[analyze] AI failed: ${e?.message}, falling back to Gemini`);
+    try {
+      const result = await analyzeWithGemini(text);
+      console.log(`[analyze] Gemini success: category=${result.category}`);
+      return result;
+    } catch (e2: any) {
+      console.error(`[analyze] Gemini also failed: ${e2?.message}`);
+      throw e2;
+    }
   }
 }
 
@@ -36,46 +46,56 @@ analyzeRoute.post("/", async (c) => {
   const body = await c.req.json<AnalyzeRequest>();
   if (!body.text) return c.json({ error: "text is required" }, 400);
 
-  const result = await analyze(body.text);
+  try {
+    const result = await analyze(body.text);
 
-  if (result.toxic) {
-    demoStore.addLog({
-      id: crypto.randomUUID(),
-      text: body.text,
-      result,
-      action: mapAction(result),
-      platform: body.platform || "twitter",
-      createdAt: new Date().toISOString(),
-    });
+    if (result.toxic) {
+      demoStore.addLog({
+        id: crypto.randomUUID(),
+        text: body.text,
+        result,
+        action: mapAction(result),
+        platform: body.platform || "twitter",
+        createdAt: new Date().toISOString(),
+      });
+    }
+
+    return c.json(result);
+  } catch (e) {
+    console.error("[analyze] All backends failed:", e);
+    return c.json({ error: "Analysis service unavailable", toxic: false, score: 0, category: "unknown", reason: "Service unavailable" }, 503);
   }
-
-  return c.json(result);
 });
 
 analyzeRoute.post("/batch", async (c) => {
   const body = await c.req.json<BatchAnalyzeRequest>();
   if (!body.items?.length) return c.json({ error: "items is required" }, 400);
 
-  const results = await analyzeBatch(body.items);
+  try {
+    const results = await analyzeBatch(body.items);
 
-  for (const r of results) {
-    if (r.toxic) {
-      const item = body.items.find((i) => i.id === r.id);
-      demoStore.addLog({
-        id: crypto.randomUUID(),
-        text: item?.text || "",
-        result: { toxic: r.toxic, score: r.score, category: r.category, reason: r.reason,
-                  severity: r.severity, action: r.action, isExempted: r.isExempted,
-                  processingPath: r.processingPath, allScores: r.allScores,
-                  llmAnalysis: r.llmAnalysis },
-        action: mapAction(r),
-        platform: body.platform || "twitter",
-        createdAt: new Date().toISOString(),
-      });
+    for (const r of results) {
+      if (r.toxic) {
+        const item = body.items.find((i) => i.id === r.id);
+        demoStore.addLog({
+          id: crypto.randomUUID(),
+          text: item?.text || "",
+          result: { toxic: r.toxic, score: r.score, category: r.category, reason: r.reason,
+                    severity: r.severity, action: r.action, isExempted: r.isExempted,
+                    processingPath: r.processingPath, allScores: r.allScores,
+                    llmAnalysis: r.llmAnalysis },
+          action: mapAction(r),
+          platform: body.platform || "twitter",
+          createdAt: new Date().toISOString(),
+        });
+      }
     }
-  }
 
-  return c.json({ results });
+    return c.json({ results });
+  } catch (e) {
+    console.error("[analyze/batch] All backends failed:", e);
+    return c.json({ results: [], error: "Analysis service unavailable" }, 503);
+  }
 });
 
 export default analyzeRoute;

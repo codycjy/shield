@@ -7,6 +7,7 @@ import analyzeRoutes from "./routes/analyze";
 import protectionRoutes from "./routes/protection";
 import logRoutes from "./routes/logs";
 import eventRoutes from "./routes/events";
+import generateRoutes from "./routes/generate";
 
 const app = new Hono();
 
@@ -22,6 +23,7 @@ app.route("/api/analyze", analyzeRoutes);
 app.route("/api/protection", protectionRoutes);
 app.route("/api/logs", logRoutes);
 app.route("/api/events", eventRoutes);
+app.route("/api/generate", generateRoutes);
 
 // Health check
 app.get("/health", (c) => c.json({ status: "ok" }));

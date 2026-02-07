@@ -29,4 +29,9 @@ export const api = {
   getLogs: (page = 1, pageSize = 20) =>
     apiFetch(`/api/logs?page=${page}&pageSize=${pageSize}`),
   getStats: () => apiFetch('/api/logs/stats'),
+  generate: (count = 1, mode: 'normal' | 'attack' = 'normal') =>
+    apiFetch('/api/generate', {
+      method: 'POST',
+      body: JSON.stringify({ count, mode }),
+    }),
 };

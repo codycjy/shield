@@ -125,15 +125,17 @@ export default function TwitterFeed({
       <div>
         {tweets.map((tweet) => {
           const analysis = analysisResults[tweet.id];
+          const isGenerated = tweet.id.startsWith('gen_') || tweet.id.startsWith('user_');
           return (
-            <TweetCard
-              key={tweet.id}
-              tweet={tweet}
-              isToxic={analysis?.isToxic || false}
-              isShielded={isShielded}
-              category={analysis?.category || 'Unknown'}
-              reason={analysis?.reason}
-            />
+            <div key={tweet.id} className={isGenerated ? 'tweet-enter' : ''}>
+              <TweetCard
+                tweet={tweet}
+                isToxic={analysis?.isToxic || false}
+                isShielded={isShielded}
+                category={analysis?.category || 'Unknown'}
+                reason={analysis?.reason}
+              />
+            </div>
           );
         })}
       </div>

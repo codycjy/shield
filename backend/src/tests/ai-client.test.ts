@@ -1,7 +1,7 @@
 import { test, expect, describe, mock, beforeAll } from "bun:test";
 import { analyzeWithAI, analyzeWithAIBatch, isAIServiceHealthy } from "../services/ai-client";
 
-const AI_URL = process.env.AI_SERVICE_URL || "http://localhost:5001";
+const AI_URL = process.env.AI_SERVICE_URL || "http://localhost:5000";
 
 // Skip all tests if AI service is not running
 let aiAvailable = false;
