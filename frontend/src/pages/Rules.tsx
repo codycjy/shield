@@ -158,8 +158,17 @@ export default function Rules() {
   };
 
   const handleAuthorize = (platform: string) => {
-    // TODO: OAuth flow
-    alert(`Redirecting to ${platform} authorization...`);
+    // Simulate OAuth binding
+    const defaultUsernames: Record<string, string> = {
+      instagram: '@jennifer_blog',
+      youtube: 'JenniferVlogs',
+      twitter: '@jennifer_k',
+    };
+    setSocialAccounts(prev => prev.map(acc =>
+      acc.platform === platform
+        ? { ...acc, connected: true, username: defaultUsernames[platform] || `@${platform}_user` }
+        : acc
+    ));
   };
 
   return (
@@ -441,21 +450,33 @@ export default function Rules() {
                         )}
                       </div>
                     </div>
-                    {acc.connected ? (
-                      <button
-                        onClick={() => handleUnbind(acc.platform)}
-                        className="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors border border-transparent hover:border-red-100 hover:bg-red-50 px-3 py-1.5 rounded-lg"
-                      >
-                        Unbind
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleAuthorize(acc.platform)}
-                        className="bg-slate-900 text-white text-xs px-5 py-2 rounded-lg hover:bg-slate-800 shadow-md transition-transform active:scale-95"
-                      >
-                        Authorize
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {acc.connected && (
+                        <a
+                          href="/simulator"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs font-medium text-white bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+                        >
+                          <i className={`${acc.icon} text-[10px]`}></i> View on {acc.platform === 'twitter' ? 'X' : acc.platform.charAt(0).toUpperCase() + acc.platform.slice(1)}
+                        </a>
+                      )}
+                      {acc.connected ? (
+                        <button
+                          onClick={() => handleUnbind(acc.platform)}
+                          className="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors border border-transparent hover:border-red-100 hover:bg-red-50 px-3 py-1.5 rounded-lg"
+                        >
+                          Unbind
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAuthorize(acc.platform)}
+                          className="bg-slate-900 text-white text-xs px-5 py-2 rounded-lg hover:bg-slate-800 shadow-md transition-transform active:scale-95"
+                        >
+                          Authorize
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -687,7 +708,7 @@ export default function Rules() {
       {/* FontAwesome CDN for icons */}
       <link
         rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
       />
     </div>
   );

@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 
+type Phase = 'normal' | 'crisis' | 'ended';
+
 interface FloatingBallProps {
   isActive: boolean;
   isAnalyzing: boolean;
-  onToggle: () => void;
+  phase: Phase;
   stats: {
     intercepted: number;
     clean: number;
@@ -15,7 +17,7 @@ interface FloatingBallProps {
 export default function FloatingBall({
   isActive,
   isAnalyzing,
-  onToggle,
+  phase,
   stats,
   categoryBreakdown,
 }: FloatingBallProps) {
@@ -91,6 +93,7 @@ export default function FloatingBall({
 
   // Determine orb state for CSS
   const getOrbState = () => {
+    if (phase === 'ended') return 'gray';
     if (isAnalyzing) return 'yellow';
     if (isActive && stats.threatLevel === 'High') return 'red';
     if (isActive) return 'green';
@@ -155,7 +158,13 @@ export default function FloatingBall({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="bg-gradient-to-r from-green-600 to-emerald-700 px-4 py-3 flex items-center justify-between">
+          <div className={`px-4 py-3 flex items-center justify-between ${
+            phase === 'ended'
+              ? 'bg-gradient-to-r from-gray-500 to-gray-600'
+              : phase === 'crisis'
+              ? 'bg-gradient-to-r from-red-600 to-red-700'
+              : 'bg-gradient-to-r from-green-600 to-emerald-700'
+          }`}>
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
@@ -178,31 +187,39 @@ export default function FloatingBall({
             <div className="flex items-center gap-2 mb-4">
               <div
                 className={`w-3 h-3 rounded-full ${
-                  isActive ? 'bg-green-500 animate-pulse' : 'bg-green-400'
+                  phase === 'ended'
+                    ? 'bg-gray-400'
+                    : phase === 'crisis'
+                    ? 'bg-red-500 animate-pulse'
+                    : 'bg-green-500 animate-pulse'
                 }`}
-                style={isActive ? { boxShadow: '0 0 8px rgba(34,197,94,0.6)' } : { boxShadow: '0 0 6px rgba(34,197,94,0.3)' }}
+                style={
+                  phase === 'ended'
+                    ? {}
+                    : phase === 'crisis'
+                    ? { boxShadow: '0 0 8px rgba(239,68,68,0.6)' }
+                    : { boxShadow: '0 0 8px rgba(34,197,94,0.6)' }
+                }
               />
               <span className="text-sm font-medium text-gray-700">
                 {isAnalyzing
                   ? 'Analyzing...'
-                  : isActive
-                  ? 'Protection Active'
-                  : 'Standby — Protected'}
+                  : phase === 'ended'
+                  ? 'Protection Ended'
+                  : phase === 'crisis'
+                  ? 'Crisis Mode — Defending'
+                  : 'Protection Active'}
               </span>
             </div>
 
-            {/* Toggle Button */}
-            <button
-              onClick={onToggle}
-              disabled={isAnalyzing}
-              className={`w-full py-3 rounded-lg font-semibold text-white transition-all ${
-                isAnalyzing
-                  ? 'bg-gray-400 cursor-not-allowed'
-                  : isActive
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
+            {/* Phase indicator */}
+            <div className={`w-full py-3 rounded-lg font-semibold text-white text-center ${
+              phase === 'ended'
+                ? 'bg-gray-400'
+                : phase === 'crisis'
+                ? 'bg-red-600'
+                : 'bg-green-600'
+            }`}>
               {isAnalyzing ? (
                 <div className="flex items-center justify-center gap-2">
                   <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -211,15 +228,17 @@ export default function FloatingBall({
                   </svg>
                   <span>Analyzing...</span>
                 </div>
-              ) : isActive ? (
-                'Deactivate Shield'
+              ) : phase === 'ended' ? (
+                'Shield Deactivated'
+              ) : phase === 'crisis' ? (
+                'Crisis Defense Active'
               ) : (
-                'Activate Shield'
+                'Shield Active'
               )}
-            </button>
+            </div>
 
-            {/* Stats (when active) */}
-            {isActive && (
+            {/* Stats (when active or ended with results) */}
+            {(isActive || phase === 'ended') && stats.intercepted > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <div className="grid grid-cols-3 gap-2 text-center">
                   <div>
@@ -258,7 +277,7 @@ export default function FloatingBall({
             {/* Link to Dashboard */}
             <div className="mt-4 pt-3 border-t border-gray-100">
               <a
-                href="/overview"
+                href="/dashboard"
                 className="flex items-center justify-center gap-2 text-sm text-green-600 hover:text-green-700 font-medium"
               >
                 <span>Open Dashboard</span>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import StatusBanner from '../components/StatusBanner';
 import StatCard from '../components/StatCard';
 import TrendChart from '../components/TrendChart';
@@ -10,7 +9,6 @@ import ClaimsCard from '../components/ClaimsCard';
 type Mode = 'daily' | 'crisis' | 'ended';
 
 export default function Overview() {
-  const navigate = useNavigate();
   // Demo: Switch between modes for testing
   const [mode, setMode] = useState<Mode>('daily');
 
@@ -63,7 +61,7 @@ export default function Overview() {
         mode={mode}
         onActivateCrisis={handleActivateCrisis}
         onEndCrisis={handleEndCrisis}
-        onViewOnX={() => navigate('/dashboard/simulator')}
+        onViewOnX={() => window.open('/simulator', '_blank')}
       />
 
       {/* Charts Section */}

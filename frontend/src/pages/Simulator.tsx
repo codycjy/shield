@@ -49,33 +49,64 @@ function mockAnalyze(tweet: Tweet): AnalysisResult {
   };
 }
 
+type Phase = 'normal' | 'crisis' | 'ended';
+
+// Phase timeline: normal(10s) → crisis(8s) → ended(ongoing)
+const NORMAL_DURATION = 10_000;
+const CRISIS_DURATION = 8_000;
+
 export default function Simulator() {
-  const [isActive, setIsActive] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [phase, setPhase] = useState<Phase>('normal');
+  const isAnalyzing = false;
   const [isPosting, setIsPosting] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<Record<string, AnalysisResult>>({});
   const [userTweets, setUserTweets] = useState<Tweet[]>([]);
   const [generatedTweets, setGeneratedTweets] = useState<Tweet[]>([]);
-  const isActiveRef = useRef(isActive);
+  const phaseRef = useRef<Phase>(phase);
 
-  // Keep ref in sync so interval callbacks see latest value
+  // isActive = true always (keeps existing interceptions visible)
+  const isActive = true;
+
+  // Keep ref in sync
   useEffect(() => {
-    isActiveRef.current = isActive;
-  }, [isActive]);
+    phaseRef.current = phase;
+  }, [phase]);
+
+  // ── Automated phase timeline (chained to avoid drift) ────────
+  const timelineStarted = useRef(false);
+  useEffect(() => {
+    if (timelineStarted.current) return; // guard against StrictMode double-fire
+    timelineStarted.current = true;
+
+    let endedTimer: ReturnType<typeof setTimeout>;
+
+    const crisisTimer = setTimeout(() => {
+      setPhase('crisis');
+      // Chain: crisis lasts CRISIS_DURATION then → ended
+      // Keep isActive true so already-intercepted tweets stay blurred
+      endedTimer = setTimeout(() => {
+        setPhase('ended');
+      }, CRISIS_DURATION);
+    }, NORMAL_DURATION);
+
+    return () => {
+      clearTimeout(crisisTimer);
+      clearTimeout(endedTimer);
+    };
+  }, []);
 
   // ── Real-time comment generation ──────────────────────────────
   useEffect(() => {
-    // When shield is OFF: 1 tweet every 3 seconds
-    // When shield is ON : 3 tweets every 1 second (attack simulation)
-    const interval = isActive ? 1000 : 3000;
+    // crisis: 3 tweets / 1s; normal & ended: 1 tweet / 3s
+    const interval = phase === 'crisis' ? 1000 : 3000;
 
     const addTweets = async () => {
-      const active = isActiveRef.current;
+      const currentPhase = phaseRef.current;
+      const isCrisis = currentPhase === 'crisis';
       let newTweets: Tweet[];
 
       try {
-        // Try backend → AI service generation
-        const res = await api.generate(active ? 3 : 1, active ? 'attack' : 'normal');
+        const res = await api.generate(isCrisis ? 3 : 1, isCrisis ? 'attack' : 'normal');
         if (res.comments?.length) {
           newTweets = res.comments.map((c: any) => ({
             id: c.id,
@@ -92,10 +123,9 @@ export default function Simulator() {
           throw new Error('empty response');
         }
       } catch {
-        // Fallback to local comment pool
-        newTweets = active
+        newTweets = isCrisis
           ? generateAttackBurst(3)
-          : [generateRandomTweet(0.4)];
+          : [generateRandomTweet(currentPhase === 'ended' ? 0.2 : 0.4)];
       }
 
       setGeneratedTweets(prev => {
@@ -103,8 +133,8 @@ export default function Simulator() {
         return updated.length > MAX_GENERATED ? updated.slice(0, MAX_GENERATED) : updated;
       });
 
-      // Auto-analyze new tweets when shield is on
-      if (active) {
+      // Auto-analyze only during normal & crisis (not ended)
+      if (currentPhase !== 'ended') {
         for (const tweet of newTweets) {
           api.analyze(tweet.text)
             .then(result => {
@@ -131,7 +161,7 @@ export default function Simulator() {
 
     const timer = setInterval(addTweets, interval);
     return () => clearInterval(timer);
-  }, [isActive]);
+  }, [phase]);
 
   const stats = {
     intercepted: Object.values(analysisResults).filter(r => r.isToxic).length,
@@ -149,57 +179,6 @@ export default function Simulator() {
       acc[r.category] = (acc[r.category] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-
-  const handleToggle = async () => {
-    if (isActive) {
-      // Deactivate
-      setIsActive(false);
-      setAnalysisResults({});
-    } else {
-      // Activate - analyze existing tweets in feed
-      setIsAnalyzing(true);
-
-      try {
-        const allExisting = [...userTweets, ...generatedTweets, ...sampleTweets];
-        const items = allExisting.map(tweet => ({
-          id: tweet.id,
-          text: tweet.text,
-        }));
-
-        const response = await api.analyzeBatch(items);
-
-        const results: Record<string, AnalysisResult> = {};
-        if (response.results) {
-          response.results.forEach((result: any) => {
-            results[result.id] = {
-              id: result.id,
-              isToxic: result.toxic || false,
-              category: result.category || 'Unknown',
-              reason: result.reason,
-            };
-          });
-        }
-
-        setAnalysisResults(results);
-        setIsActive(true);
-      } catch (error) {
-        console.error('Analysis failed, using local fallback:', error);
-
-        // Fallback: analyze all tweets locally
-        const allExisting = [...userTweets, ...generatedTweets, ...sampleTweets];
-        const mockResults: Record<string, AnalysisResult> = {};
-
-        for (const tweet of allExisting) {
-          mockResults[tweet.id] = mockAnalyze(tweet);
-        }
-
-        setAnalysisResults(mockResults);
-        setIsActive(true);
-      } finally {
-        setIsAnalyzing(false);
-      }
-    }
-  };
 
   // Handle user posting a comment — analyze it in real time
   const handlePost = useCallback(async (text: string) => {
@@ -249,120 +228,8 @@ export default function Simulator() {
   // Combined tweets: user-posted first, then generated, then sample data
   const allTweets = [...userTweets, ...generatedTweets, ...sampleTweets];
 
-  // Get list of intercepted tweets for the log
-  const interceptedTweets = Object.entries(analysisResults)
-    .filter(([, r]) => r.isToxic)
-    .map(([id, r]) => {
-      const tweet = allTweets.find(t => t.id === id);
-      return { ...r, author: tweet?.author || 'Unknown', handle: tweet?.handle || '' };
-    });
-
   return (
-    <div className="h-[calc(100vh-8rem)] relative flex gap-5">
-      {/* Left Panel - Real-time Stats */}
-      <div className="w-[280px] h-full flex-shrink-0 overflow-y-auto space-y-4">
-        {/* Shield Status */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <div className={`w-2.5 h-2.5 rounded-full ${isActive ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
-            <span className="text-sm font-semibold text-gray-700">
-              {isAnalyzing ? 'Analyzing...' : isActive ? 'Shield Active' : 'Shield Inactive'}
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-gray-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-gray-900">{allTweets.length}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Total Scanned</div>
-            </div>
-            <div className="bg-red-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-red-600">{stats.intercepted}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Blocked</div>
-            </div>
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <div className="text-2xl font-bold text-green-600">{stats.clean}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Clean</div>
-            </div>
-            <div className={`rounded-lg p-3 text-center ${
-              stats.threatLevel === 'High' ? 'bg-red-50' : stats.threatLevel === 'Medium' ? 'bg-yellow-50' : 'bg-green-50'
-            }`}>
-              <div className={`text-2xl font-bold ${
-                stats.threatLevel === 'High' ? 'text-red-600' : stats.threatLevel === 'Medium' ? 'text-yellow-600' : 'text-green-600'
-              }`}>{stats.threatLevel}</div>
-              <div className="text-xs text-gray-500 mt-0.5">Threat Level</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Category Breakdown */}
-        {Object.keys(categoryBreakdown).length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Category Breakdown</h3>
-            <div className="space-y-2">
-              {Object.entries(categoryBreakdown).map(([category, count]) => {
-                const total = stats.intercepted || 1;
-                const pct = Math.round((count / total) * 100);
-                const colorMap: Record<string, string> = {
-                  'Harassment': 'bg-red-500',
-                  'Threat': 'bg-orange-500',
-                  'Hate Speech': 'bg-purple-500',
-                  'Sarcasm': 'bg-yellow-500',
-                  'Spam': 'bg-gray-500',
-                };
-                const barColor = colorMap[category] || 'bg-blue-500';
-                return (
-                  <div key={category}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-gray-600">{category}</span>
-                      <span className="text-gray-500 font-medium">{count} ({pct}%)</span>
-                    </div>
-                    <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${barColor} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Interception Log */}
-        {interceptedTweets.length > 0 && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-700 mb-3">Interception Log</h3>
-            <div className="space-y-2.5 max-h-[300px] overflow-y-auto">
-              {interceptedTweets.map((item, i) => (
-                <div key={i} className="flex items-start gap-2 text-xs">
-                  <div className="w-1.5 h-1.5 rounded-full bg-red-500 mt-1.5 flex-shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-medium text-gray-800 truncate">{item.author} <span className="text-gray-400 font-normal">{item.handle}</span></div>
-                    <div className="text-gray-500 flex items-center gap-1.5">
-                      <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                        item.category === 'Harassment' ? 'bg-red-100 text-red-700' :
-                        item.category === 'Threat' ? 'bg-orange-100 text-orange-700' :
-                        item.category === 'Hate Speech' ? 'bg-purple-100 text-purple-700' :
-                        item.category === 'Sarcasm' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>{item.category}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Empty state when not active */}
-        {!isActive && (
-          <div className="bg-white rounded-xl border border-gray-200 p-6 text-center">
-            <div className="text-3xl mb-2">🛡</div>
-            <div className="text-sm font-medium text-gray-700 mb-1">Click the floating shield</div>
-            <div className="text-xs text-gray-400">Activate protection to start scanning comments in real-time</div>
-          </div>
-        )}
-      </div>
-
-      {/* Twitter Page with border */}
-      <div className="flex-1 h-full rounded-xl border border-gray-200 overflow-hidden shadow-sm bg-white">
+    <div className="h-screen w-screen relative bg-white">
         <div className="h-full flex">
         {/* Left Sidebar - Narrow Twitter icon nav */}
         <div className="w-[60px] h-full border-r border-gray-200 flex flex-col items-center py-3 px-1.5 flex-shrink-0">
@@ -417,7 +284,7 @@ export default function Simulator() {
         </div>
 
         {/* Right Sidebar - Trending */}
-        <div className="hidden xl:block w-[280px] h-full py-3 px-4 overflow-y-auto flex-shrink-0">
+        <div className="w-[350px] h-full py-3 px-4 overflow-y-auto flex-shrink-0">
           {/* Search Bar */}
           <div className="mb-4">
             <div className="bg-gray-100 rounded-full flex items-center px-4 py-2.5 border border-transparent focus-within:border-sky-500 focus-within:bg-white transition-colors">
@@ -484,14 +351,13 @@ export default function Simulator() {
             <span className="hover:underline cursor-pointer">Accessibility</span>
           </div>
         </div>
-        </div>
       </div>
 
       {/* Floating Ball Control */}
       <FloatingBall
         isActive={isActive}
         isAnalyzing={isAnalyzing}
-        onToggle={handleToggle}
+        phase={phase}
         stats={stats}
         categoryBreakdown={categoryBreakdown}
       />

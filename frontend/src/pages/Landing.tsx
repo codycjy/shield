@@ -149,7 +149,7 @@ export default function Landing() {
       <section className="pb-16 px-6">
         <div className="max-w-md mx-auto text-center">
           <button
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/dashboard/rules')}
             className="w-full py-3 px-6 border-2 border-gray-300 rounded-xl text-gray-700 font-medium hover:border-green-500 hover:text-green-600 transition-colors bg-white"
           >
             Guest Mode

@@ -7,7 +7,6 @@ const pageTitles: Record<string, string> = {
   '/dashboard/logs': 'Interception Logs',
   '/dashboard/rules': 'Defense Rules',
   '/dashboard/profile': 'Profile',
-  '/dashboard/simulator': 'Live Simulator',
 };
 
 export default function DashboardLayout() {

@@ -6,6 +6,7 @@ interface NavItem {
   label: string;
   icon: ReactElement;
   badge?: string;
+  external?: boolean;
 }
 
 const navItems: NavItem[] = [
@@ -38,8 +39,9 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    path: '/dashboard/simulator',
+    path: '/simulator',
     label: 'Live Simulator',
+    external: true,
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
@@ -83,6 +85,8 @@ export default function Sidebar() {
               <li key={item.path}>
                 <Link
                   to={item.path}
+                  target={item.external ? '_blank' : undefined}
+                  rel={item.external ? 'noopener noreferrer' : undefined}
                   className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-green-50 text-green-600 font-medium'
@@ -91,6 +95,11 @@ export default function Sidebar() {
                 >
                   {item.icon}
                   <span className="flex-1">{item.label}</span>
+                  {item.external && (
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  )}
                   {item.badge && (
                     <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
                       {item.badge}

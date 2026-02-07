@@ -233,3 +233,17 @@ body {
 .shield-orb[data-state="off"] .shield-orb-glow     { animation-duration: 5s; }
 .shield-orb[data-state="off"] .shield-orb-core     { animation-duration: 5s; }
 .shield-orb[data-state="off"] .shield-orb-ripple   { display: none; }
+
+/* ---- Gray (ended — protection over) ---- */
+.shield-orb[data-state="gray"] {
+  --trail-color: rgba(156, 163, 175, 0.4);
+  --trail-color-mid: rgba(156, 163, 175, 0.1);
+  --glow-color: rgba(156, 163, 175, 0.08);
+  --ripple-color: rgba(156, 163, 175, 0.1);
+  --core-bg: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  --core-shadow: rgba(156, 163, 175, 0.2);
+}
+.shield-orb[data-state="gray"] .shield-orb-trail    { animation-duration: 6s; }
+.shield-orb[data-state="gray"] .shield-orb-glow     { animation-duration: 6s; }
+.shield-orb[data-state="gray"] .shield-orb-core     { animation-duration: 6s; }
+.shield-orb[data-state="gray"] .shield-orb-ripple   { display: none; }

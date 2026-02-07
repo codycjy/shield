@@ -17,8 +17,8 @@ function App() {
           <Route path="logs" element={<Logs />} />
           <Route path="rules" element={<Rules />} />
           <Route path="profile" element={<Profile />} />
-          <Route path="simulator" element={<Simulator />} />
         </Route>
+        <Route path="/simulator" element={<Simulator />} />
       </Routes>
     </BrowserRouter>
   );
