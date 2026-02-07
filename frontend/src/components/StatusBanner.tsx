@@ -2,6 +2,7 @@ interface StatusBannerProps {
   mode?: 'daily' | 'crisis' | 'ended';
   onActivateCrisis?: () => void;
   onEndCrisis?: () => void;
+  onViewOnX?: () => void;
   crisisDuration?: string;
   predictedEnd?: string;
 }
@@ -10,6 +11,7 @@ export default function StatusBanner({
   mode = 'daily',
   onActivateCrisis,
   onEndCrisis,
+  onViewOnX,
   crisisDuration = '01:24:30',
   predictedEnd = 'today 18:00',
 }: StatusBannerProps) {
@@ -22,15 +24,26 @@ export default function StatusBanner({
           <span className="text-emerald-800 font-bold">Daily Protection Active</span>
           <span className="text-emerald-600 text-sm">| System continuously monitoring, no abnormal traffic detected.</span>
         </div>
-        <button
-          onClick={onActivateCrisis}
-          className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-red-100 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-          Activate Crisis Mode
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onViewOnX}
+            className="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            View on X
+          </button>
+          <button
+            onClick={onActivateCrisis}
+            className="bg-red-50 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-red-100 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            Activate Crisis Mode
+          </button>
+        </div>
       </div>
     );
   }
@@ -56,15 +69,26 @@ export default function StatusBanner({
             </p>
           </div>
         </div>
-        <button
-          onClick={onEndCrisis}
-          className="bg-white text-green-700 border border-green-200 px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-green-50 transition-colors"
-        >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-          </svg>
-          End Crisis
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onViewOnX}
+            className="bg-white text-gray-700 border border-gray-200 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 hover:bg-gray-50 transition-colors"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4 fill-current">
+              <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+            </svg>
+            View on X
+          </button>
+          <button
+            onClick={onEndCrisis}
+            className="bg-white text-green-700 border border-green-200 px-6 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm hover:bg-green-50 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+            </svg>
+            End Crisis
+          </button>
+        </div>
       </div>
     );
   }

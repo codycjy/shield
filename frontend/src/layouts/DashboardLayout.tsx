@@ -3,11 +3,11 @@ import Sidebar from '../components/Sidebar';
 import TopBar from '../components/TopBar';
 
 const pageTitles: Record<string, string> = {
-  '/': 'Security Overview',
-  '/logs': 'Interception Logs',
-  '/rules': 'Defense Rules',
-  '/profile': 'Profile',
-  '/simulator': 'Live Simulator',
+  '/dashboard': 'Security Overview',
+  '/dashboard/logs': 'Interception Logs',
+  '/dashboard/rules': 'Defense Rules',
+  '/dashboard/profile': 'Profile',
+  '/dashboard/simulator': 'Live Simulator',
 };
 
 export default function DashboardLayout() {

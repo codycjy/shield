@@ -10,7 +10,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   {
-    path: '/',
+    path: '/dashboard',
     label: 'Overview',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -19,7 +19,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    path: '/logs',
+    path: '/dashboard/logs',
     label: 'Interception Logs',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -29,7 +29,7 @@ const navItems: NavItem[] = [
     badge: '12',
   },
   {
-    path: '/rules',
+    path: '/dashboard/rules',
     label: 'Defense Rules',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,7 +38,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    path: '/simulator',
+    path: '/dashboard/simulator',
     label: 'Live Simulator',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,7 +47,7 @@ const navItems: NavItem[] = [
     ),
   },
   {
-    path: '/profile',
+    path: '/dashboard/profile',
     label: 'Profile',
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
