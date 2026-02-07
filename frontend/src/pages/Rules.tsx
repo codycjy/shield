@@ -76,9 +76,9 @@ export default function Rules() {
   const [chineseEnabled, setChineseEnabled] = useState(true);
   const [englishEnabled, setEnglishEnabled] = useState(true);
   const [blacklistKeywords, setBlacklistKeywords] = useState<BlacklistKeyword[]>([
-    { keyword: '骗子', context: '诈骗话术' },
-    { keyword: '退钱', context: '恶意售后' },
-    { keyword: '丑八怪', context: '人身攻击' },
+    { keyword: 'scammer', context: 'fraud tactics' },
+    { keyword: 'refund now', context: 'malicious returns' },
+    { keyword: 'ugly freak', context: 'personal attack' },
   ]);
   const [newKeyword, setNewKeyword] = useState('');
   const [newContext, setNewContext] = useState('');
