@@ -10,8 +10,7 @@ services:
 
   backend:
     build: ./backend
-    ports:
-      - "3000:3000"
+    # No ports exposed — only accessible via nginx proxy
     environment:
       - PORT=3000
       - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -29,8 +28,7 @@ services:
 
   ai:
     build: ./ai
-    ports:
-      - "5001:5000"
+    # No ports exposed — only accessible by backend via Docker network
     environment:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     healthcheck:
