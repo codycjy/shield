@@ -13,7 +13,7 @@ export default function TweetCard({
   isToxic = false,
   isShielded = false,
   category = 'Unknown',
-  reason,
+  reason: _reason,
 }: TweetCardProps) {
   const showOverlay = isToxic && isShielded;
 
