@@ -17,6 +17,7 @@ interface TwitterFeedProps {
   isShielded: boolean;
   onPost?: (text: string) => Promise<void>;
   isPosting?: boolean;
+  animatingIds?: Set<string>;
 }
 
 export default function TwitterFeed({
@@ -25,6 +26,7 @@ export default function TwitterFeed({
   isShielded,
   onPost,
   isPosting = false,
+  animatingIds,
 }: TwitterFeedProps) {
   const [composeText, setComposeText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -125,9 +127,9 @@ export default function TwitterFeed({
       <div>
         {tweets.map((tweet) => {
           const analysis = analysisResults[tweet.id];
-          const isGenerated = tweet.id.startsWith('gen_') || tweet.id.startsWith('user_');
+          const isNew = animatingIds?.has(tweet.id) || tweet.id.startsWith('user_');
           return (
-            <div key={tweet.id} className={isGenerated ? 'tweet-enter' : ''}>
+            <div key={tweet.id} className={isNew ? 'tweet-enter' : ''}>
               <TweetCard
                 tweet={tweet}
                 isToxic={analysis?.isToxic || false}

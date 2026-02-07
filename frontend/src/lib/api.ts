@@ -9,6 +9,9 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status}`);
+  }
   return res.json();
 }
 

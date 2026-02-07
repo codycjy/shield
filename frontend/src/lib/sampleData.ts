@@ -5,6 +5,7 @@ export interface Tweet {
   avatar: string;
   text: string;
   timestamp: string;
+  createdAt?: number;
   likes: number;
   retweets: number;
   replies: number;

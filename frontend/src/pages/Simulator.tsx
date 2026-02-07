@@ -55,14 +55,39 @@ type Phase = 'normal' | 'crisis' | 'ended';
 const NORMAL_DURATION = 10_000;
 const CRISIS_DURATION = 8_000;
 
+// Pre-analyze sample tweets at module level so masks & counts are correct from first render
+const sampleAnalysis: Record<string, AnalysisResult> = {};
+for (const tweet of sampleTweets) {
+  sampleAnalysis[tweet.id] = mockAnalyze(tweet);
+}
+
+// Monotonic ID counter based on timestamp to guarantee timeline order
+let idCounter = 0;
+function makeId(): string {
+  return `gen_${Date.now()}_${idCounter++}`;
+}
+
+function formatRelativeTime(createdAt: number): string {
+  const seconds = Math.floor((Date.now() - createdAt) / 1000);
+  if (seconds < 5) return 'just now';
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  return `${hours}h`;
+}
+
 export default function Simulator() {
   const [phase, setPhase] = useState<Phase>('normal');
   const isAnalyzing = false;
   const [isPosting, setIsPosting] = useState(false);
-  const [analysisResults, setAnalysisResults] = useState<Record<string, AnalysisResult>>({});
+  const [analysisResults, setAnalysisResults] = useState<Record<string, AnalysisResult>>(sampleAnalysis);
   const [userTweets, setUserTweets] = useState<Tweet[]>([]);
   const [generatedTweets, setGeneratedTweets] = useState<Tweet[]>([]);
   const phaseRef = useRef<Phase>(phase);
+  const isGeneratingRef = useRef(false);
+  // Accumulating set: IDs are added on each batch, removed after animation completes
+  const animatingIdsRef = useRef<Set<string>>(new Set());
 
   // isActive = true always (keeps existing interceptions visible)
   const isActive = true;
@@ -101,61 +126,91 @@ export default function Simulator() {
     const interval = phase === 'crisis' ? 1000 : 3000;
 
     const addTweets = async () => {
-      const currentPhase = phaseRef.current;
-      const isCrisis = currentPhase === 'crisis';
-      let newTweets: Tweet[];
+      // Prevent concurrent calls (avoids out-of-order tweet insertion)
+      if (isGeneratingRef.current) return;
+      isGeneratingRef.current = true;
+
+      // Capture batch time BEFORE async work — guarantees correct ordering
+      const batchTime = Date.now();
 
       try {
-        const res = await api.generate(isCrisis ? 3 : 1, isCrisis ? 'attack' : 'normal');
-        if (res.comments?.length) {
-          newTweets = res.comments.map((c: any) => ({
-            id: c.id,
-            author: c.author,
-            handle: c.handle,
-            avatar: c.avatar,
-            text: c.text,
-            timestamp: c.timestamp || 'just now',
-            likes: c.likes ?? 0,
-            retweets: c.retweets ?? 0,
-            replies: c.replies ?? 0,
-          }));
-        } else {
-          throw new Error('empty response');
-        }
-      } catch {
-        newTweets = isCrisis
-          ? generateAttackBurst(3)
-          : [generateRandomTweet(currentPhase === 'ended' ? 0.2 : 0.4)];
-      }
+        const currentPhase = phaseRef.current;
+        const isCrisis = currentPhase === 'crisis';
+        let newTweets: Tweet[];
 
-      setGeneratedTweets(prev => {
-        const updated = [...newTweets, ...prev];
-        return updated.length > MAX_GENERATED ? updated.slice(0, MAX_GENERATED) : updated;
-      });
-
-      // Auto-analyze only during normal & crisis (not ended)
-      if (currentPhase !== 'ended') {
-        for (const tweet of newTweets) {
-          api.analyze(tweet.text)
-            .then(result => {
-              setAnalysisResults(prev => ({
-                ...prev,
-                [tweet.id]: {
-                  id: tweet.id,
-                  isToxic: result.toxic || false,
-                  category: result.category || 'Unknown',
-                  reason: result.reason,
-                  severity: result.severity,
-                },
-              }));
-            })
-            .catch(() => {
-              setAnalysisResults(prev => ({
-                ...prev,
-                [tweet.id]: mockAnalyze(tweet),
-              }));
-            });
+        try {
+          const res = await api.generate(isCrisis ? 3 : 1, isCrisis ? 'attack' : 'normal');
+          if (res.comments?.length) {
+            newTweets = res.comments.map((c: any) => ({
+              id: c.id,
+              author: c.author,
+              handle: c.handle,
+              avatar: c.avatar,
+              text: c.text,
+              timestamp: 'just now',
+              likes: c.likes ?? 0,
+              retweets: c.retweets ?? 0,
+              replies: c.replies ?? 0,
+            }));
+          } else {
+            throw new Error('empty response');
+          }
+        } catch {
+          newTweets = isCrisis
+            ? generateAttackBurst(3)
+            : [generateRandomTweet(currentPhase === 'ended' ? 0.2 : 0.4)];
         }
+
+        // Stamp every tweet with monotonic createdAt + timestamp-based ID
+        newTweets.forEach((t, i) => {
+          t.createdAt = batchTime + i; // stagger within batch for stable sort
+          t.id = makeId();             // monotonic ID guarantees uniqueness
+        });
+
+        // Track new IDs for animation (accumulate, don't overwrite)
+        const newIds = newTweets.map(t => t.id);
+        newIds.forEach(id => animatingIdsRef.current.add(id));
+
+        // Clean up after animation completes (prevents unbounded Set growth)
+        setTimeout(() => {
+          newIds.forEach(id => animatingIdsRef.current.delete(id));
+        }, 500);
+
+        setGeneratedTweets(prev => {
+          const updated = [...newTweets, ...prev];
+          return updated.length > MAX_GENERATED ? updated.slice(0, MAX_GENERATED) : updated;
+        });
+
+        // Auto-analyze only during normal & crisis (not ended)
+        if (currentPhase !== 'ended') {
+          for (const tweet of newTweets) {
+            api.analyze(tweet.text)
+              .then(result => {
+                // Validate response shape; fall back to mockAnalyze if invalid
+                if (!result || typeof result.toxic === 'undefined') {
+                  throw new Error('invalid API response');
+                }
+                setAnalysisResults(prev => ({
+                  ...prev,
+                  [tweet.id]: {
+                    id: tweet.id,
+                    isToxic: result.toxic || false,
+                    category: result.category || 'Unknown',
+                    reason: result.reason,
+                    severity: result.severity,
+                  },
+                }));
+              })
+              .catch(() => {
+                setAnalysisResults(prev => ({
+                  ...prev,
+                  [tweet.id]: mockAnalyze(tweet),
+                }));
+              });
+          }
+        }
+      } finally {
+        isGeneratingRef.current = false;
       }
     };
 
@@ -183,7 +238,8 @@ export default function Simulator() {
   // Handle user posting a comment — analyze it in real time
   const handlePost = useCallback(async (text: string) => {
     setIsPosting(true);
-    const tweetId = `user_${Date.now()}`;
+    const now = Date.now();
+    const tweetId = `user_${now}`;
 
     const newTweet: Tweet = {
       id: tweetId,
@@ -192,6 +248,7 @@ export default function Simulator() {
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=you',
       text,
       timestamp: 'just now',
+      createdAt: now,
       likes: 0,
       retweets: 0,
       replies: 0,
@@ -225,8 +282,14 @@ export default function Simulator() {
     }
   }, []);
 
-  // Combined tweets: user-posted first, then generated, then sample data
-  const allTweets = [...userTweets, ...generatedTweets, ...sampleTweets];
+  // Combined tweets: sort by createdAt descending (newest first), samples at bottom
+  const allTweets = [...userTweets, ...generatedTweets, ...sampleTweets]
+    .sort((a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0))
+    .map(t => t.createdAt
+      ? { ...t, timestamp: formatRelativeTime(t.createdAt) }
+      : t
+    );
+  const animatingIds = animatingIdsRef.current;
 
   return (
     <div className="h-screen w-screen relative bg-white">
@@ -280,6 +343,7 @@ export default function Simulator() {
             isShielded={isActive}
             onPost={handlePost}
             isPosting={isPosting}
+            animatingIds={animatingIds}
           />
         </div>
 
