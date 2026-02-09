@@ -67,3 +67,6 @@ The built-in simulator provides a mock Twitter/X feed with pre-loaded tweets (po
 ## License
 
 MIT
+
+## Contributor
+[@nina999](https://github.com/nina999) [@candaccc-tang](https://github.com/candaccc-tang)
